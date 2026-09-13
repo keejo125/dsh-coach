@@ -340,3 +340,105 @@ export interface OutputTextResult {
   kind: OutputSegmentKind
   text: string
 }
+
+// ============================================================
+// /coach/api 复盘契约（v0.2a：复盘数据层）
+// ============================================================
+
+/** /coach/api 全端点统一错误码。 */
+export type CoachApiErrorCode =
+  | 'COACH_SESSION_NOT_FOUND'
+  | 'COACH_BAD_REQUEST'
+  | 'COACH_INTERNAL'
+
+/** 错误响应体；message 已脱敏（不含绝对路径与内部栈）。 */
+export interface CoachApiErrorBody {
+  code: CoachApiErrorCode
+  message: string
+}
+
+/** /coach/api 全端点统一包络：成功 `{ok:true,data}` / 失败 `{ok:false,error}`。 */
+export type CoachApiEnvelope<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: CoachApiErrorBody }
+
+/** 会话规模：会话有多长、活动量多大。 */
+export interface CoachScope {
+  /** 出现事件的轮次数（turn/start 及带 turn 的事件去重）。 */
+  turns: number
+  /** 用户主动发起的消息数（source.kind === 'user'，主会话视角）。 */
+  userTurns: number
+  /** 助手步数（assistant/message 事件数，含空文本步）。 */
+  assistantSteps: number
+  /** 配对成功的工具调用数。 */
+  toolCalls: number
+  /** 工具调用失败数（result 的 isError / error 字段）。 */
+  failedToolCalls: number
+  /** 直接子会话数（traceSession 第一层 descendants）。 */
+  delegations: number
+}
+
+/** 交互质量信号：v0.2a 口径（详见 spec/08 复盘契约）。 */
+export interface CoachSignals {
+  /**
+   * 追问次数 = max(0, userTurns - 1)。
+   * v1 简化：首个用户消息视为初始任务，其后的用户消息均算追问/追加。
+   */
+  followUps: number
+  /**
+   * 人工干预次数：用户消息紧邻其前一个事件是 tool/result
+   * （用户在工具结果落地后介入，而非等助手继续）。
+   */
+  interventions: number
+  /**
+   * 纠错轮次：干预中，其前的 tool/result 是失败的
+   * （agent 出错后用户介入修正）。
+   */
+  correctionTurns: number
+  /** 重复读文件数：同一文件被 read 查看 ≥ 2 次（未比较内容，v1 口径）。 */
+  repeatedReadFiles: number
+  /**
+   * 失败重试分组数：同一轮次内同一工具名失败 ≥ 2 次的分组
+   * （agent 反复调用同一工具连续失败）。
+   */
+  retriedFailures: number
+  /** 上下文压缩次数（compaction/start 事件数）。 */
+  compactions: number
+}
+
+/** 产物健康：agent 对工作区文件做了什么。 */
+export interface CoachArtifacts {
+  /** 写入/编辑过的文件总数（write/edit/str_replace_editor 目标，去重）。 */
+  writtenFiles: number
+  /** 新建文件数（最终操作态为 create）。 */
+  createdFiles: number
+  /** 被修改 ≥ 2 次的文件数（迭代打磨信号）。 */
+  updatedFiles: number
+}
+
+/** 质量分维度标识。 */
+export type CoachDimensionId = 'completion' | 'efficiency' | 'recovery' | 'artifact' | 'delegation' | 'context'
+
+/** 单维度得分（0-100）。 */
+export interface CoachDimensionScore {
+  id: CoachDimensionId
+  score: number
+}
+
+/** 质量分 v1：六维加权（权重见 coach/score.ts 单源）。 */
+export interface CoachScore {
+  /** 0-100 加权总分。 */
+  total: number
+  dimensions: CoachDimensionScore[]
+}
+
+/** GET /coach/api/session/:id/report 的 data。 */
+export interface CoachReport {
+  sessionId: string
+  /** 生成时间戳（epoch ms）。 */
+  generatedAt: number
+  scope: CoachScope
+  signals: CoachSignals
+  artifacts: CoachArtifacts
+  score: CoachScore
+}

@@ -19,6 +19,8 @@ const PROJECT = process.cwd()
 const DESIGN = join(PROJECT, 'spec', '02-架构设计.md')
 /** v1.1 增量设计文档（§11 登记本轮新增文件：ids.ts / selectors.ts / 4 个新 spec）。 */
 const DESIGN_V11 = join(PROJECT, 'spec', '03-架构设计-v1.1增量.md')
+/** v0.2a 复盘数据层设计文档（§8 登记本轮新增文件：src/host/coach/* 4 件 + 2 个新 spec）。 */
+const DESIGN_V08 = join(PROJECT, 'spec', '08-复盘数据层设计.md')
 
 /** 从设计文档的指定小节代码块解析出相对路径清单。 */
 function parseDesignFileList(designPath: string, heading: string): string[] {
@@ -68,12 +70,13 @@ function listSources(dir: string, root = dir): string[] {
   return out
 }
 
-describe('F1 · 交付文件齐备（清单来自设计文档 §2 + v1.1 §11）', () => {
+describe('F1 · 交付文件齐备（清单来自设计文档 §2 + v1.1 §11 + v0.2a §8）', () => {
   const baseline = parseDesignFileList(DESIGN, '## 2. 文件清单')
   const incremental = parseDesignFileList(DESIGN_V11, '## 11. 文件清单（本轮增量）')
-  const expected = [...new Set([...baseline, ...incremental])]
+  const incrementalV08 = parseDesignFileList(DESIGN_V08, '## 8. 文件清单（v0.2a 增量）')
+  const expected = [...new Set([...baseline, ...incremental, ...incrementalV08])]
 
-  it('两个设计文档列出的文件逐个存在', () => {
+  it('三个设计文档列出的文件逐个存在', () => {
     expect(baseline.length).toBe(28)
     // v1.1 §11 登记的新增件必须齐备（glob 条目如 *.module.css 不做存在性检查）
     const declared = new Set(incremental)
@@ -86,6 +89,18 @@ describe('F1 · 交付文件齐备（清单来自设计文档 §2 + v1.1 §11）
       'tests/selectors.spec.ts',
     ]) {
       expect(declared.has(path), `v1.1 §11 未登记：${path}`).toBe(true)
+    }
+    // v0.2a §8 登记的新增件必须齐备
+    const declaredV08 = new Set(incrementalV08)
+    for (const path of [
+      'src/host/coach/api.ts',
+      'src/host/coach/metrics.ts',
+      'src/host/coach/report.ts',
+      'src/host/coach/score.ts',
+      'tests/coach.spec.ts',
+      'tests/coach.verify.spec.ts',
+    ]) {
+      expect(declaredV08.has(path), `v0.2a §8 未登记：${path}`).toBe(true)
     }
     const missing = expected
       .filter(path => !path.includes('*'))
