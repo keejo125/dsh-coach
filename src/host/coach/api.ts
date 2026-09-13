@@ -15,6 +15,7 @@ import type {} from '@deepseek-ai/dsh-session-query'
 import type { CoachApiEnvelope, CoachApiErrorCode } from '../../shared/types.ts'
 import type { AggregatorEngine } from '../aggregator.ts'
 import { buildCoachReport, CoachSessionUnavailableError } from './report.ts'
+import { buildCoachTimeline } from './timeline.ts'
 
 const COACH_API_PREFIX = '/coach/api'
 
@@ -50,12 +51,19 @@ export async function dispatchCoachApi(
   try {
     if (method !== 'GET') return fail('COACH_BAD_REQUEST', `method ${method} is not supported`)
     const segments = pathname.split('/').filter(segment => segment.length > 0)
-    if (segments[0] !== 'session' || segments.length !== 3 || segments[2] !== 'report') {
+    if (segments[0] !== 'session' || segments.length !== 3) {
       return fail('COACH_BAD_REQUEST', 'unknown route')
     }
     const sessionId = segments[1] as string
-    const report = await buildCoachReport(engine, sessionId)
-    return ok(report)
+    if (segments[2] === 'report') {
+      const report = await buildCoachReport(engine, sessionId)
+      return ok(report)
+    }
+    if (segments[2] === 'timeline') {
+      const timeline = await buildCoachTimeline(engine, sessionId)
+      return ok(timeline)
+    }
+    return fail('COACH_BAD_REQUEST', 'unknown route')
   } catch (error) {
     if (error instanceof CoachSessionUnavailableError) {
       return fail('COACH_SESSION_NOT_FOUND', 'session is unavailable')

@@ -441,4 +441,126 @@ export interface CoachReport {
   signals: CoachSignals
   artifacts: CoachArtifacts
   score: CoachScore
+  // ===== v0.2b 复盘 UI 扩展（spec/09 §4）=====
+  /** 子智能体汇总（traceSession 子会话各自 readSession 聚合）。 */
+  agents: CoachAgentSummary[]
+  /** 文件引用统计（高频 Top + 未使用引用）。 */
+  references: CoachReferenceStats
+  /** Token 投影（官方 usage 字段扫描；无 usage 数据为 null）。 */
+  token: CoachTokenStats | null
+  /** 上下文构成投影（轻量版，复用 Context 聚合口径）。 */
+  contextProfile: CoachContextProfile | null
+  /** 交互时间线索引（详情走 GET /coach/api/session/:id/timeline）。 */
+  timeline: { id: string; rounds: number } | null
+}
+
+/** 子智能体汇总（v0.2b）。 */
+export interface CoachAgentSummary {
+  /** 子会话 id。 */
+  sessionId: string
+  /** 展示名（agentPreset 末段；缺失时降级为「子Agent」）。 */
+  label: string
+  role: 'main' | 'subagent'
+  /** 用户主动消息数（该子会话视角）。 */
+  userTurns: number
+  /** 收到委派指令数（其内用户消息数；聚合器口径的近似）。 */
+  delegations: number
+  /** 读文件数（read 族成功结果，去重）。 */
+  readFiles: number
+  /** 配对成功的工具调用数。 */
+  toolCalls: number
+  /** 工具调用失败数。 */
+  failedToolCalls: number
+  /** 写入/编辑过的文件数（去重）。 */
+  writtenFiles: number
+  /** 是否有非空最终答复。 */
+  hasFinalAnswer: boolean
+}
+
+/** 文件引用统计（v0.2b）。 */
+export interface CoachReferenceStats {
+  /** 查看次数 Top（按 views 降序，至多 10 条）。 */
+  topReferences: Array<{ path: string; views: number }>
+  /**
+   * 未使用引用：被读 ≥ 1 次、未出现在任何产物路径、
+   * 且最终答复文本未提及（文件名/路径末段子串匹配）的文件。
+   */
+  unusedReferences: Array<{ path: string; views: number }>
+  /** 参考文件总数（去重）。 */
+  totalFiles: number
+  /** 查看次数合计（read 族每次调用 +1，与聚合器 §3.7 同口径）。 */
+  totalViews: number
+}
+
+/** Token 投影（v0.2b）：assistant/message.data.usage（官方 token-meter 投影）直接扫描。 */
+export interface CoachTokenStats {
+  /** 会话当前总压力（最后一条 usage.totalTokens）。 */
+  total: number
+  /** 各条增量 inputTokens 之和。 */
+  input: number
+  /** 各条增量 outputTokens 之和。 */
+  output: number
+  /** 最后一条 cacheReadTokens（累计缓存命中）。 */
+  cache: number
+  /** 按轮次的增量分布（有 usage 的轮次，按轮次升序）。 */
+  perTurn: Array<{ turn: number; input: number; output: number; total: number }>
+}
+
+/** 上下文构成投影（v0.2b）：复用 Context 聚合口径的轻量版（不做预算截断判定）。 */
+export interface CoachContextProfile {
+  /** 用户主动输入条数（source.kind === 'user'）。 */
+  userItems: number
+  /** 系统注入条数（source.kind === 'plugin'）。 */
+  pluginItems: number
+  /** 直接子会话数。 */
+  delegations: number
+  /** 系统注入条目中提取的唯一文件路径数（尽力，无则 0 不表示「无注入文件」）。 */
+  injectFiles: number
+  /** 参考文件总数（去重）。 */
+  totalFiles: number
+  /** 查看次数合计。 */
+  totalViews: number
+  /** 最终答复段数（0 或 1）。 */
+  finalSegments: number
+  /** 过程输出段数（非空 assistant 文本消息数，不含最终段）。 */
+  processSegments: number
+}
+
+/** 交互时间线：GET /coach/api/session/:id/timeline 的 data。 */
+export interface CoachTimeline {
+  sessionId: string
+  /** 生成时间戳（epoch ms）。 */
+  generatedAt: number
+  rounds: CoachTimelineRound[]
+}
+
+/** 一轮交互（以用户主动消息为分界；结构化事件不单独成轮）。 */
+export interface CoachTimelineRound {
+  /** 用户输入文本（截断至 400 字符）。 */
+  userText: string
+  /** 首轮为 initial，其后为 followup。 */
+  kind: 'initial' | 'followup'
+  signals: {
+    /** 该轮存在用户紧邻工具结果后的介入。 */
+    intervention: boolean
+    /** 该轮存在纠错（介入前工具结果失败）。 */
+    correction: boolean
+  }
+  /** 该轮工具动作明细（按事件序）。 */
+  actions: CoachTimelineAction[]
+  /** 该轮产物路径（成功 write/edit，规范化相对路径，按首次出现序去重）。 */
+  artifacts: string[]
+  /** 该轮最后一个非空答复文本（截断至 400 字符）。 */
+  assistantText: string | null
+}
+
+/** 时间线内的单个工具动作。 */
+export interface CoachTimelineAction {
+  name: string
+  /** 参考/产物路径（read/write/edit/str_replace_editor 才有；其余为 null）。 */
+  path: string | null
+  /** 是否失败（result 的 isError / error 字段）。 */
+  failed: boolean
+  /** 同轮同工具失败 ≥ 2 次的标记（重试后仍失败的信号）。 */
+  retried: boolean
 }

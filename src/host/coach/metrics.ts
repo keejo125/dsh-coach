@@ -12,8 +12,9 @@
  * - 失败的工具结果不计入参考/产物（与聚合器 §3.7 同口径）。
  */
 
+import { extractInjectFilePaths } from '../../shared/extract.ts'
 import { normalizeWorkspacePath, relativizeAgainstRoot } from '../../shared/path.ts'
-import type { CoachArtifacts, CoachScope, CoachSignals } from '../../shared/types.ts'
+import type { CoachArtifacts, CoachContextProfile, CoachScope, CoachSignals, CoachTokenStats } from '../../shared/types.ts'
 import type { AggregatorEvent } from '../aggregator.ts'
 
 /** 扫描结果：规模/信号/产物 + completion 维度所需的「最后一个非空答复」观测。 */
@@ -25,6 +26,15 @@ export interface CoachScan {
   lastAssistantText: string | undefined
   /** 该答复是否被中断（半截输出）。 */
   lastAssistantInterrupted: boolean
+  // ===== v0.2b 扩展（spec/09 §4）=====
+  /** 文件 → 查看次数（read 族成功结果；失败不计入）。 */
+  refCounts: ReadonlyMap<string, number>
+  /** 产物路径（成功 write/edit 目标，去重，规范化相对路径）。 */
+  outputPaths: readonly string[]
+  /** Token 投影（assistant/message.data.usage 扫描；无 usage 为 null）。 */
+  token: CoachTokenStats | null
+  /** 上下文构成计数（轻量投影，不做预算截断判定）。 */
+  context: Pick<CoachContextProfile, 'userItems' | 'pluginItems' | 'injectFiles' | 'finalSegments' | 'processSegments'>
 }
 
 interface CoachCall {
@@ -32,11 +42,11 @@ interface CoachCall {
   args: Record<string, unknown> | null
 }
 
-function textOf(value: unknown): string | undefined {
+export function textOf(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined
 }
 
-function safeParseArgs(raw: string): Record<string, unknown> | null {
+export function safeParseArgs(raw: string): Record<string, unknown> | null {
   try {
     const parsed: unknown = JSON.parse(raw)
     if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -49,7 +59,7 @@ function safeParseArgs(raw: string): Record<string, unknown> | null {
 }
 
 /** 从 content 块提取拼接文本（与聚合器 extractMessageContent 的 text 部分同口径）。 */
-function extractText(content: unknown): string {
+export function extractText(content: unknown): string {
   const texts: string[] = []
   if (Array.isArray(content)) {
     for (const block of content) {
@@ -62,7 +72,7 @@ function extractText(content: unknown): string {
 }
 
 /** 判定 tool/result 是否失败：顶层 error 或 content 块 isError。 */
-function isErrorResult(data: unknown): boolean {
+export function isErrorResult(data: unknown): boolean {
   if (data === null || typeof data !== 'object') return false
   const record = data as Record<string, unknown>
   if (record['error'] !== undefined && record['error'] !== null) return true
@@ -76,7 +86,7 @@ function isErrorResult(data: unknown): boolean {
 }
 
 /** 取 tool/result 的 callId（顶层或 message.source.callId；基座实际在 message.source.callId）。 */
-function resolveCallId(data: Record<string, unknown>): string | undefined {
+export function resolveCallId(data: Record<string, unknown>): string | undefined {
   const top = data['callId']
   if (typeof top === 'string' && top.length > 0) return top
   const message = data['message']
@@ -91,12 +101,36 @@ function resolveCallId(data: Record<string, unknown>): string | undefined {
 }
 
 /** 把基座展示路径折算成规范化工作区相对路径；不可解析返回 null（静默丢弃）。 */
-function toWorkspacePath(displayPath: unknown, cwd: string | undefined): string | null {
+export function toWorkspacePath(displayPath: unknown, cwd: string | undefined): string | null {
   const raw = textOf(displayPath)
   if (raw === undefined || raw.length === 0) return null
   const relative = relativizeAgainstRoot(raw, cwd)
   if (relative === null) return null
   return normalizeWorkspacePath(relative)
+}
+
+/**
+ * 解析工具调用的产物路径（write/edit/str_replace_editor 的 create|str_replace|insert）。
+ * 仅做路径解析，不判定成败；失败结果由调用方负责不入产物。
+ */
+export function resolveOutputPath(call: CoachCall, data: Record<string, unknown>, cwd: string | undefined): string | null {
+  const meta = (data['meta'] !== null && typeof data['meta'] === 'object' && !Array.isArray(data['meta']))
+    ? data['meta'] as Record<string, unknown>
+    : undefined
+  const args = call.args
+  const argPath = (key: string): string | undefined => (args === null ? undefined : textOf(args[key]))
+
+  if (call.name === 'write' || call.name === 'edit') {
+    const diffs = Array.isArray(meta?.['diffs']) ? meta['diffs'] as unknown[] : []
+    return toWorkspacePath(argPath('file_path') ?? textOf((diffs[0] as Record<string, unknown> | undefined)?.['path']), cwd)
+  }
+  if (call.name === 'str_replace_editor') {
+    const command = args === null ? undefined : textOf(args['command'])
+    if (command === 'create' || command === 'str_replace' || command === 'insert') {
+      return toWorkspacePath(argPath('path'), cwd)
+    }
+  }
+  return null
 }
 
 interface OutputState {
@@ -134,6 +168,16 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   let lastAssistantText: string | undefined
   let lastAssistantInterrupted = false
 
+  // ===== v0.2b 收集器 =====
+  /** 各轮次 token 增量（turn → {input, output, cache}；cache 为该轮最后一次 usage 的快照）。 */
+  const tokenByTurn = new Map<number, { input: number; output: number; cache: number }>()
+  /** 最后一条 usage 快照（total/cache 取末条）。 */
+  let lastUsage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; totalTokens: number } | undefined
+  let contextUserItems = 0
+  let contextPluginItems = 0
+  let injectFiles = 0
+  let nonEmptyTexts = 0
+
   /** 把一次成功的工具结果归入参考（read 族）或产物（write/edit 族）。 */
   const classify = (call: CoachCall, data: Record<string, unknown>): void => {
     const meta = (data['meta'] !== null && typeof data['meta'] === 'object' && !Array.isArray(data['meta']))
@@ -167,20 +211,15 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
         existing.opCount += 1
       }
     }
-    if (call.name === 'write') {
+    const outputPath = resolveOutputPath(call, data, cwd)
+    if (outputPath !== null) {
+      const meta = (data['meta'] !== null && typeof data['meta'] === 'object' && !Array.isArray(data['meta']))
+        ? data['meta'] as Record<string, unknown>
+        : undefined
       const diffs = Array.isArray(meta?.['diffs']) ? meta['diffs'] as unknown[] : []
-      const path = toWorkspacePath(argPath('file_path') ?? textOf((diffs[0] as Record<string, unknown> | undefined)?.['path']), cwd)
-      if (path !== null) recordOutput(path, diffs.length > 0 ? 'update' : 'create')
-    } else if (call.name === 'edit') {
-      const diffs = Array.isArray(meta?.['diffs']) ? meta['diffs'] as unknown[] : []
-      const path = toWorkspacePath(argPath('file_path') ?? textOf((diffs[0] as Record<string, unknown> | undefined)?.['path']), cwd)
-      if (path !== null) recordOutput(path, 'update')
-    } else if (call.name === 'str_replace_editor') {
-      const command = args === null ? undefined : textOf(args['command'])
-      if (command === 'create' || command === 'str_replace' || command === 'insert') {
-        const path = toWorkspacePath(argPath('path'), cwd)
-        if (path !== null) recordOutput(path, command === 'create' ? 'create' : 'update')
-      }
+      const isCreate = (call.name === 'write' && diffs.length === 0)
+        || (call.name === 'str_replace_editor' && args?.['command'] === 'create')
+      recordOutput(outputPath, isCreate ? 'create' : 'update')
     }
   }
 
@@ -200,10 +239,29 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
         const sourceKind = (source as Record<string, unknown>)['kind']
         if (sourceKind === 'user') {
           userTurns += 1
+          contextUserItems += 1
           if (lastSubstantiveType === 'tool/result') {
             interventions += 1
             if (lastToolResultError) correctionTurns += 1
           }
+        } else if (sourceKind === 'plugin') {
+          contextPluginItems += 1
+          // 注入文件计数：复用聚合器的注入路径提取口径（snapshot/notice 摘要）
+          const text = textOf(data?.['message'])
+          const sourceObj = source as Record<string, unknown>
+          const form = textOf(sourceObj['form'])
+          const sections = sourceObj['sections']
+          let texts: string[]
+          if (form === 'snapshot' && Array.isArray(sections)) {
+            texts = (sections as unknown[])
+              .map(section => (section !== null && typeof section === 'object' ? textOf((section as Record<string, unknown>)['text']) : undefined))
+              .filter((value): value is string => value !== undefined)
+          } else {
+            const summary = form === 'notice' ? textOf(sourceObj['summary']) : undefined
+            texts = summary !== undefined && text !== undefined ? [summary, text] : [text ?? '']
+          }
+          const paths = extractInjectFilePaths(form, texts)
+          if (paths.length > 0) injectFiles += new Set(paths).size
         }
       }
     } else if (type === 'assistant/message') {
@@ -214,6 +272,30 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
       if (text.trim().length > 0) {
         lastAssistantText = text
         lastAssistantInterrupted = data?.['interrupted'] === true
+        nonEmptyTexts += 1
+      }
+      // —— Token 投影：官方 usage（token-meter 写入事件流）——
+      const usage = data?.['usage']
+      if (usage !== null && typeof usage === 'object') {
+        const u = usage as Record<string, unknown>
+        const input = typeof u['inputTokens'] === 'number' ? u['inputTokens'] as number : undefined
+        const output = typeof u['outputTokens'] === 'number' ? u['outputTokens'] as number : undefined
+        const cache = typeof u['cacheReadTokens'] === 'number' ? u['cacheReadTokens'] as number : undefined
+        const total = typeof u['totalTokens'] === 'number' ? u['totalTokens'] as number : undefined
+        if (input !== undefined || output !== undefined || cache !== undefined || total !== undefined) {
+          lastUsage = {
+            inputTokens: input ?? 0,
+            outputTokens: output ?? 0,
+            cacheReadTokens: cache ?? 0,
+            totalTokens: total ?? 0,
+          }
+          const turn = typeof data?.['turn'] === 'number' ? data['turn'] as number : (currentTurn ?? 0)
+          const bucket = tokenByTurn.get(turn) ?? { input: 0, output: 0, cache: 0 }
+          bucket.input += input ?? 0
+          bucket.output += output ?? 0
+          bucket.cache = cache ?? 0
+          tokenByTurn.set(turn, bucket)
+        }
       }
       const turn = data?.['turn']
       if (typeof turn === 'number') turns.add(turn)
@@ -258,6 +340,27 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   const repeatedReadFiles = [...refCounts.values()].filter(count => count >= 2).length
   const retriedFailures = [...failedByTurnTool.values()].filter(count => count >= 2).length
 
+  // —— Token 投影（无 usage 数据 → null，UI 降级显示「未启用」）——
+  let token: CoachTokenStats | null = null
+  if (lastUsage !== undefined) {
+    token = {
+      total: lastUsage.totalTokens,
+      input: [...tokenByTurn.values()].reduce((sum, bucket) => sum + bucket.input, 0),
+      output: [...tokenByTurn.values()].reduce((sum, bucket) => sum + bucket.output, 0),
+      cache: lastUsage.cacheReadTokens,
+      perTurn: [...tokenByTurn.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([turn, bucket]) => ({
+          turn,
+          input: bucket.input,
+          output: bucket.output,
+          total: bucket.input + bucket.output + bucket.cache,
+        })),
+    }
+  }
+
+  const finalSegments = nonEmptyTexts > 0 ? 1 : 0
+
   const scope: CoachScope = {
     turns: turns.size,
     userTurns,
@@ -281,5 +384,22 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
     updatedFiles: [...outputs.values()].filter(state => state.opCount >= 2).length,
   }
 
-  return { scope, signals, artifacts, lastAssistantText, lastAssistantInterrupted }
+  return {
+    scope,
+    signals,
+    artifacts,
+    lastAssistantText,
+    lastAssistantInterrupted,
+    // v0.2b
+    refCounts,
+    outputPaths: [...outputs.keys()],
+    token,
+    context: {
+      userItems: contextUserItems,
+      pluginItems: contextPluginItems,
+      injectFiles,
+      finalSegments,
+      processSegments: Math.max(0, nonEmptyTexts - finalSegments),
+    },
+  }
 }

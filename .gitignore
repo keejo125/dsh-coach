@@ -11,3 +11,9 @@ lib/
 # 编辑器与系统噪声
 .DS_Store
 *.tsbuildinfo
+
+# 根目录误置产物（tsdown 实际输出 lib/；此规则防止再次误提交）
+/client.js
+/client.js.map
+/index.js
+/index.js.map

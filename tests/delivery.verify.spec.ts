@@ -21,6 +21,8 @@ const DESIGN = join(PROJECT, 'spec', '02-架构设计.md')
 const DESIGN_V11 = join(PROJECT, 'spec', '03-架构设计-v1.1增量.md')
 /** v0.2a 复盘数据层设计文档（§8 登记本轮新增文件：src/host/coach/* 4 件 + 2 个新 spec）。 */
 const DESIGN_V08 = join(PROJECT, 'spec', '08-复盘数据层设计.md')
+/** v0.2b 复盘 UI 设计文档（§9 登记本轮新增文件：timeline/CoachView/coach-client + 2 个新 spec）。 */
+const DESIGN_V09 = join(PROJECT, 'spec', '09-复盘UI与记忆闭环设计.md')
 
 /** 从设计文档的指定小节代码块解析出相对路径清单。 */
 function parseDesignFileList(designPath: string, heading: string): string[] {
@@ -70,11 +72,12 @@ function listSources(dir: string, root = dir): string[] {
   return out
 }
 
-describe('F1 · 交付文件齐备（清单来自设计文档 §2 + v1.1 §11 + v0.2a §8）', () => {
+describe('F1 · 交付文件齐备（清单来自设计文档 §2 + v1.1 §11 + v0.2a §8 + v0.2b §9）', () => {
   const baseline = parseDesignFileList(DESIGN, '## 2. 文件清单')
   const incremental = parseDesignFileList(DESIGN_V11, '## 11. 文件清单（本轮增量）')
   const incrementalV08 = parseDesignFileList(DESIGN_V08, '## 8. 文件清单（v0.2a 增量）')
-  const expected = [...new Set([...baseline, ...incremental, ...incrementalV08])]
+  const incrementalV09 = parseDesignFileList(DESIGN_V09, '## 9. 文件清单（v0.2b 增量）')
+  const expected = [...new Set([...baseline, ...incremental, ...incrementalV08, ...incrementalV09])]
 
   it('三个设计文档列出的文件逐个存在', () => {
     expect(baseline.length).toBe(28)
@@ -102,6 +105,17 @@ describe('F1 · 交付文件齐备（清单来自设计文档 §2 + v1.1 §11 + 
       'tests/coach.verify.spec.ts',
     ]) {
       expect(declaredV08.has(path), `v0.2a §8 未登记：${path}`).toBe(true)
+    }
+    // v0.2b §9 登记的新增件必须齐备
+    const declaredV09 = new Set(incrementalV09)
+    for (const path of [
+      'src/host/coach/timeline.ts',
+      'src/client/CoachView.tsx',
+      'src/client/coach-client.ts',
+      'tests/coach.timeline.spec.ts',
+      'tests/coach.p2.spec.ts',
+    ]) {
+      expect(declaredV09.has(path), `v0.2b §9 未登记：${path}`).toBe(true)
     }
     const missing = expected
       .filter(path => !path.includes('*'))

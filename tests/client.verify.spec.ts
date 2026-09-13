@@ -24,6 +24,7 @@ import { OutputPane } from '../src/client/panes/OutputPane.tsx'
 // 组件与 shared 的 AgentBadge 类型同名，组件侧起别名
 import { AgentBadge as AgentBadgeView, agentBadgeText } from '../src/client/components/AgentBadge.tsx'
 import { agentOptionLabel } from '../src/client/ContextView.tsx'
+import { CoachView } from '../src/client/CoachView.tsx'
 import { zh, type ContextLocaleKey } from '../src/client/locales/zh-CN.ts'
 import { en } from '../src/client/locales/en-US.ts'
 import { aggregateContext } from '../src/host/aggregator.ts'
@@ -52,13 +53,18 @@ const t = (key: ContextLocaleKey, params?: Record<string, string | number>): str
   return template.replaceAll(/\{(\w+)\}/g, (_all, name: string) => String(params?.[name] ?? `{${name}}`))
 }
 
-describe('E1 · client 入口（v0.2a 数据层版本）', () => {
-  it('不注册任何 UI Tab（/ctx/api 已停用；P2 复盘 UI 再注册）', () => {
+describe('E1 · client 入口（v0.2b 复盘 Tab）', () => {
+  it('注册 conversation.view 的「复盘」Tab（id=coach，消费 /coach/api）', () => {
     const registered: Array<{ name: string; options: Record<string, unknown>; component: unknown }> = []
     const injected: string[] = []
+    const dictionaries: Array<Record<string, unknown>> = []
 
     const ctx = {
       effect: (fn: () => unknown) => fn(),
+      locale: {
+        register: (ns: string, dict: Record<string, unknown>) => { dictionaries.push({ ns, ...dict }) },
+        bind: () => (_key: string) => '复盘',
+      },
       slots: {
         inject: (slot: string, factory: () => unknown) => { injected.push(slot); return factory() },
         register: (options: Record<string, unknown>, component: unknown) => {
@@ -69,10 +75,15 @@ describe('E1 · client 入口（v0.2a 数据层版本）', () => {
     }
     clientEntry.apply(ctx as never)
 
-    // 数据层版本不消费 slots/locale，页面上无任何变化
-    expect(clientEntry.inject).toEqual([])
-    expect(injected).toEqual([])
-    expect(registered).toHaveLength(0)
+    // v0.2b：注册复盘 Tab（槽位 conversation.view，id=coach，order=100）
+    expect(clientEntry.inject).toEqual(['slots', 'locale'])
+    expect(injected).toEqual(['conversation.view'])
+    expect(registered).toHaveLength(1)
+    expect(registered[0]?.name).toBe('conversation.view')
+    expect(registered[0]?.options['id']).toBe('coach')
+    expect(registered[0]?.options['order']).toBe(100)
+    // 文案字典已注册（zh + en）
+    expect(dictionaries).toHaveLength(1)
   })
 })
 
@@ -683,3 +694,24 @@ function findNode(nodes: readonly FileTreeNode[], path: string): FileTreeNode | 
   }
   return undefined
 }
+
+describe('E6 · 复盘 Tab SSR 冒烟（v0.2b）', () => {
+  it('CoachView 可用假数据服务端渲染（loading 态 + 文案字典）', () => {
+    const html = renderToStaticMarkup(createElement(CoachView as never, {
+      sessionId: 's1',
+      t,
+      viewRequest: undefined,
+      completeViewRequest: () => undefined,
+    } as never))
+    // SSR 不执行 effect：渲染加载态；组件可挂载即证明结构合法
+    expect(html).toContain('暂无复盘数据')
+  })
+
+  it('字典含复盘区块全部文案键（zh/en 对齐）', () => {
+    for (const key of Object.keys(zh) as ContextLocaleKey[]) {
+      if (!key.startsWith('coach.')) continue
+      expect(en[key], `en-US 缺少 ${key}`).toBeDefined()
+      expect(typeof en[key]).toBe('string')
+    }
+  })
+})
