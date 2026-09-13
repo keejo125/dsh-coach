@@ -1,3 +1,7 @@
+/* 复盘视图样式：全部颜色走 DSH 主题 token（--dsw-alias-*），随深/浅主题自动切换。
+ * 层级约定：卡片=layer-1（相对 base 高一层）、内嵌次级块=layer-2、边框=border-l2/l3、
+ * 主文字=label-primary（默认继承不设）、次级=label-secondary、三级=label-tertiary。 */
+
 .wrap {
   display: flex;
   flex-direction: column;
@@ -15,11 +19,12 @@
 .title {
   font-size: 15px;
   font-weight: 700;
+  color: var(--dsw-alias-label-primary);
 }
 
 .subtitle {
   font-size: 11.5px;
-  color: var(--color-secondary, #6b7280);
+  color: var(--dsw-alias-label-secondary);
   font-family: ui-monospace, Menlo, monospace;
   margin-top: 2px;
 }
@@ -29,7 +34,8 @@
   font-size: 12px;
   padding: 5px 12px;
   border-radius: 8px;
-  border: 1px solid var(--border-strong, #d1d5db);
+  border: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-primary);
   background: transparent;
   cursor: pointer;
 }
@@ -47,28 +53,29 @@
 }
 
 .card {
-  border: 1px solid var(--border, #e5e7eb);
+  border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 12px;
   padding: 14px;
-  background: var(--color-bg, #fff);
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 .cardTitle {
   font-size: 13px;
   font-weight: 700;
+  color: var(--dsw-alias-label-primary);
   margin-bottom: 10px;
 }
 
 .muted {
   font-size: 12px;
-  color: var(--color-secondary, #6b7280);
+  color: var(--dsw-alias-label-secondary);
   font-weight: 400;
 }
 
 .state {
   padding: 32px 16px;
   text-align: center;
-  color: var(--color-secondary, #6b7280);
+  color: var(--dsw-alias-label-secondary);
   font-size: 13px;
 }
 
@@ -77,7 +84,8 @@
   font-size: 12px;
   padding: 5px 14px;
   border-radius: 8px;
-  border: 1px solid var(--border-strong, #d1d5db);
+  border: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-primary);
   background: transparent;
   cursor: pointer;
 }
@@ -87,6 +95,7 @@
   font-size: 44px;
   font-weight: 800;
   line-height: 1.1;
+  color: var(--dsw-alias-label-primary);
 }
 
 .rating {
@@ -95,14 +104,14 @@
   font-size: 12px;
   padding: 2px 10px;
   border-radius: 999px;
-  color: #fff;
-  background: var(--color-primary, #2563eb);
+  color: var(--dsw-alias-label-primary-inverted);
+  background: var(--dsw-alias-brand-primary);
 }
 
 .hint {
   margin-top: 10px;
   font-size: 12px;
-  color: var(--color-secondary, #6b7280);
+  color: var(--dsw-alias-label-secondary);
   line-height: 1.6;
 }
 
@@ -115,23 +124,23 @@
 
 .radarGrid {
   fill: none;
-  stroke: #e5e7eb;
+  stroke: var(--dsw-alias-border-l2);
   stroke-width: 1;
 }
 
 .radarData {
-  fill: rgba(37, 99, 235, 0.18);
-  stroke: #2563eb;
+  fill: color-mix(in srgb, var(--dsw-alias-brand-primary) 18%, transparent);
+  stroke: var(--dsw-alias-brand-primary);
   stroke-width: 2;
 }
 
 .radarDot {
-  fill: #2563eb;
+  fill: var(--dsw-alias-brand-primary);
 }
 
 .radarLabel {
   font-size: 10px;
-  fill: #374151;
+  fill: var(--dsw-alias-label-tertiary);
 }
 
 /* —— 统计条 —— */
@@ -142,10 +151,11 @@
 }
 
 .stat {
-  background: var(--color-bg-secondary, #f9fafb);
+  background: var(--dsw-alias-bg-layer-2);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 12px;
+  color: var(--dsw-alias-label-primary);
 }
 
 .stat b {
@@ -154,26 +164,28 @@
 }
 
 .stat .danger {
-  color: #dc2626;
+  color: var(--dsw-alias-state-error-primary);
 }
 
 /* —— 子智能体 —— */
 .agentRow {
-  border: 1px solid var(--border, #e5e7eb);
+  border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 10px;
   padding: 9px 11px;
   margin-bottom: 8px;
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 .agentName {
   font-size: 13px;
   font-weight: 600;
+  color: var(--dsw-alias-label-primary);
   margin-bottom: 4px;
 }
 
 .agentMeta {
   font-size: 12px;
-  color: var(--color-secondary, #6b7280);
+  color: var(--dsw-alias-label-secondary);
   line-height: 1.7;
 }
 
@@ -181,6 +193,7 @@
 .sectionLabel {
   font-size: 12.5px;
   font-weight: 600;
+  color: var(--dsw-alias-label-primary);
   margin: 10px 0 6px;
 }
 
@@ -198,22 +211,23 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #374151;
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .refViews {
-  color: var(--color-secondary, #6b7280);
+  color: var(--dsw-alias-label-secondary);
   white-space: nowrap;
 }
 
 .unused {
-  color: #dc2626;
+  color: var(--dsw-alias-state-error-primary);
 }
 
 /* —— Token —— */
 .tokenTotal {
   font-size: 13px;
   margin-bottom: 10px;
+  color: var(--dsw-alias-label-primary);
 }
 
 .turnRow {
@@ -222,6 +236,7 @@
   gap: 8px;
   font-size: 12px;
   margin-bottom: 5px;
+  color: var(--dsw-alias-label-secondary);
 }
 
 /* —— 上下文构成 —— */
@@ -232,10 +247,11 @@
 }
 
 .contextStat {
-  background: var(--color-bg-secondary, #f9fafb);
+  background: var(--dsw-alias-bg-layer-2);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 12px;
+  color: var(--dsw-alias-label-primary);
 }
 
 .contextStat b {
@@ -245,10 +261,11 @@
 
 /* —— 时间线 —— */
 .round {
-  border: 1px solid var(--border, #e5e7eb);
-  border-left: 4px solid #10b981;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-left: 4px solid var(--dsw-alias-state-success-primary);
   border-radius: 10px;
   margin-bottom: 8px;
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 .roundHead {
@@ -264,13 +281,14 @@
 
 .roundText {
   font-weight: 600;
+  color: var(--dsw-alias-label-primary);
   flex: 1;
   min-width: 160px;
 }
 
 .roundBody {
   padding: 2px 12px 12px;
-  border-top: 1px dashed var(--border, #e5e7eb);
+  border-top: 1px dashed var(--dsw-alias-border-l3);
 }
 
 .actionRow {
@@ -283,12 +301,12 @@
 }
 
 .actionName {
-  color: #2563eb;
+  color: var(--dsw-alias-brand-primary);
   min-width: 60px;
 }
 
 .actionPath {
-  color: #6b7280;
+  color: var(--dsw-alias-label-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -298,8 +316,8 @@
 .answer {
   margin-top: 8px;
   font-size: 12px;
-  color: #374151;
-  background: var(--color-bg-secondary, #f9fafb);
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2);
   border-radius: 8px;
   padding: 8px 10px;
   line-height: 1.7;
@@ -308,40 +326,40 @@
 /* —— 徽标 —— */
 .tagInitial {
   font-size: 11px;
-  background: #10b981;
-  color: #fff;
+  background: var(--dsw-alias-state-success-primary);
+  color: var(--dsw-alias-label-primary-inverted);
   border-radius: 6px;
   padding: 1px 7px;
 }
 
 .tagFollow {
   font-size: 11px;
-  background: #f59e0b;
-  color: #fff;
+  background: var(--dsw-alias-state-warn-primary);
+  color: var(--dsw-alias-label-primary-inverted);
   border-radius: 6px;
   padding: 1px 7px;
 }
 
 .tagOk {
   font-size: 11px;
-  color: #10b981;
-  border: 1px solid #10b981;
+  color: var(--dsw-alias-state-success-primary);
+  border: 1px solid var(--dsw-alias-state-success-primary);
   border-radius: 999px;
   padding: 0 7px;
 }
 
 .tagWarn {
   font-size: 11px;
-  color: #d97706;
-  border: 1px solid #d97706;
+  color: var(--dsw-alias-state-warn-primary);
+  border: 1px solid var(--dsw-alias-state-warn-primary);
   border-radius: 999px;
   padding: 0 7px;
 }
 
 .tagError {
   font-size: 11px;
-  color: #dc2626;
-  border: 1px solid #dc2626;
+  color: var(--dsw-alias-state-error-primary);
+  border: 1px solid var(--dsw-alias-state-error-primary);
   border-radius: 999px;
   padding: 0 7px;
 }
@@ -357,19 +375,19 @@
 
 .scoreLabel {
   width: 92px;
-  color: #374151;
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .scoreValue {
   width: 28px;
   text-align: right;
-  color: #374151;
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .barTrack {
   flex: 1;
   height: 6px;
-  background: var(--color-bg-secondary, #f3f4f6);
+  background: var(--dsw-alias-bg-layer-2);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -380,24 +398,25 @@
 }
 
 .barGood {
-  background: #10b981;
+  background: var(--dsw-alias-state-success-primary);
 }
 
 .barMid {
-  background: #f59e0b;
+  background: var(--dsw-alias-state-warn-primary);
 }
 
 .barPoor {
-  background: #dc2626;
+  background: var(--dsw-alias-state-error-primary);
 }
 
 .barToken {
-  background: #2563eb;
+  background: var(--dsw-alias-brand-primary);
 }
 
 /* —— 产物 —— */
 .artifactList {
   font-size: 12.5px;
+  color: var(--dsw-alias-label-primary);
 }
 
 .artifactCounts {

@@ -343,19 +343,22 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   // —— Token 投影（无 usage 数据 → null，UI 降级显示「未启用」）——
   let token: CoachTokenStats | null = null
   if (lastUsage !== undefined) {
+    const perTurn = [...tokenByTurn.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([turn, bucket]) => ({
+        turn,
+        input: bucket.input,
+        output: bucket.output,
+        total: bucket.input + bucket.output + bucket.cache,
+      }))
+    // 总量优先取末条 usage.totalTokens；旧日志缺该字段时为 0/undefined，降级为按轮总量最大值
+    const lastTotal = typeof lastUsage.totalTokens === 'number' ? lastUsage.totalTokens : 0
     token = {
-      total: lastUsage.totalTokens,
+      total: lastTotal > 0 ? lastTotal : Math.max(0, ...perTurn.map(p => p.total)),
       input: [...tokenByTurn.values()].reduce((sum, bucket) => sum + bucket.input, 0),
       output: [...tokenByTurn.values()].reduce((sum, bucket) => sum + bucket.output, 0),
       cache: lastUsage.cacheReadTokens,
-      perTurn: [...tokenByTurn.entries()]
-        .sort(([a], [b]) => a - b)
-        .map(([turn, bucket]) => ({
-          turn,
-          input: bucket.input,
-          output: bucket.output,
-          total: bucket.input + bucket.output + bucket.cache,
-        })),
+      perTurn,
     }
   }
 
