@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachTimeline, FileTreeNode } from '../shared/types.ts'
+import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachTimeline, CoachTimelineRound, FileTreeNode } from '../shared/types.ts'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { CoachApiError, fetchCoachReport, fetchCoachTimeline } from './coach-client.ts'
@@ -20,11 +20,18 @@ export type CoachViewProps = ConvViewProps & PropsLocale<'dsh-coach'>
 /** 本 Tab 在 conversation.view 槽位里的条目 id（注册处与深链命中共用）。 */
 export const COACH_VIEW_ID = 'coach'
 
-/** 把产物明细构建为文件树（dir 前、字典序；file 节点带 outputOp 徽标）。导出供 SSR 冒烟测试。 */
-export function buildArtifactTree(files: readonly CoachArtifactFile[]): FileTreeNode[] {
-  interface Builder { files: Map<string, CoachArtifactFile>; dirs: Map<string, Builder> }
+/** 文件树通用条目（产物带 outputOp、参考带 viewCount）。 */
+export interface CoachTreeEntry {
+  path: string
+  outputOp?: 'create' | 'update'
+  viewCount?: number
+}
+
+/** 把文件条目构建为文件树（dir 前、字典序；file 节点带徽标字段）。 */
+export function buildFileTree(entries: readonly CoachTreeEntry[]): FileTreeNode[] {
+  interface Builder { files: Map<string, CoachTreeEntry>; dirs: Map<string, Builder> }
   const tree: Builder = { files: new Map(), dirs: new Map() }
-  for (const file of files) {
+  for (const file of entries) {
     const segments = file.path.split('/')
     let level = tree
     for (let i = 0; i < segments.length - 1; i += 1) {
@@ -51,11 +58,20 @@ export function buildArtifactTree(files: readonly CoachArtifactFile[]): FileTree
       const file = builder.files.get(name)
       if (file === undefined) continue
       const path = parentPath.length === 0 ? name : `${parentPath}/${name}`
-      nodes.push({ name, path, type: 'file', outputOp: file.op })
+      // exactOptionalPropertyTypes：undefined 显式赋值非法，条件式挂徽标字段
+      const node: FileTreeNode = { name, path, type: 'file' }
+      if (file.outputOp !== undefined) node.outputOp = file.outputOp
+      if (file.viewCount !== undefined) node.viewCount = file.viewCount
+      nodes.push(node)
     }
     return nodes
   }
   return emit(tree, '')
+}
+
+/** 把产物明细构建为文件树（file 节点带 outputOp 徽标）。导出供 SSR 冒烟测试。 */
+export function buildArtifactTree(files: readonly CoachArtifactFile[]): FileTreeNode[] {
+  return buildFileTree(files.map(file => ({ path: file.path, outputOp: file.op })))
 }
 
 /** 评级档位（spec/09 §3：≥90 优秀 / ≥75 良好 / ≥60 一般 / <60 待改进）。 */
@@ -331,20 +347,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
                 )}
               </summary>
-              <div className={css.roundBody}>
-                {round.actions.length === 0
-                  ? <div className={css.muted}>{t('coach.timeline.noActions')}</div>
-                  : round.actions.map((action, i) => (
-                    <div key={i} className={css.actionRow}>
-                      <span className={css.actionName}>{action.name}</span>
-                      {action.path !== null && <span className={css.actionPath} title={action.path}>{action.path}</span>}
-                      {action.failed && <span className={css.tagError}>{action.retried ? t('coach.timeline.retried') : t('coach.timeline.failed')}</span>}
-                    </div>
-                  ))}
-                {round.assistantText !== null && (
-                  <div className={css.answer}>{round.assistantText}</div>
-                )}
-              </div>
+              <RoundDetail round={round} t={t} />
             </details>
           ))}
       </section>
@@ -388,6 +391,64 @@ export function ArtifactTree({
         {iterated > 0 ? <> · {t('coach.artifacts.iterated', { n: iterated })}</> : null}
       </div>
       <FileTree nodes={nodes} t={t} agentsMeta={new Map()} />
+    </div>
+  )
+}
+
+/** 由本轮产物明细生成计数（ArtifactTree 入参）。 */
+function countsForRound(files: readonly CoachArtifactFile[]): CoachArtifacts {
+  return {
+    writtenFiles: files.length,
+    createdFiles: files.filter(file => file.op === 'create').length,
+    updatedFiles: files.filter(file => file.op === 'update').length,
+    files: [...files],
+  }
+}
+
+/** 时间线单轮展开：①对话气泡 ②参考文件树 ③产物文件树 + 过程折叠。导出供 SSR 冒烟测试。 */
+export function RoundDetail({ round, t }: { round: CoachTimelineRound; t: Translate }): JSX.Element {
+  return (
+    <div className={css.roundBody}>
+      {/* ① 对话段：与对话框一致的气泡 */}
+      <div className={css.chatBlock}>
+        <div className={css.chatUser}>{round.userText}</div>
+        {round.assistantText !== null && (
+          <div className={css.chatAssistant}>{round.assistantText}</div>
+        )}
+      </div>
+      {/* ② 参考段：本轮读过的文件（viewCount 徽标） */}
+      {round.references.length > 0 && (
+        <div className={css.subBlock}>
+          <div className={css.subTitle}>{t('coach.timeline.references')} {round.references.length}</div>
+          <FileTree
+            nodes={buildFileTree(round.references.map(ref => ({ path: ref.path, viewCount: ref.views })))}
+            t={t}
+            agentsMeta={new Map()}
+          />
+        </div>
+      )}
+      {/* ③ 产物段：本轮产物清单（新建/更新徽标） */}
+      {round.artifacts.length > 0 && (
+        <div className={css.subBlock}>
+          <div className={css.subTitle}>{t('coach.timeline.outputs')} {round.artifacts.length}</div>
+          <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} />
+        </div>
+      )}
+      {/* 过程：工具动作明细，折叠 */}
+      {round.actions.length > 0 && (
+        <details className={css.processBlock}>
+          <summary className={css.processHead}>
+            {t('coach.timeline.process')} {round.actions.length}
+          </summary>
+          {round.actions.map((action, i) => (
+            <div key={i} className={css.actionRow}>
+              <span className={css.actionName}>{action.name}</span>
+              {action.path !== null && <span className={css.actionPath} title={action.path}>{action.path}</span>}
+              {action.failed && <span className={css.tagError}>{action.retried ? t('coach.timeline.retried') : t('coach.timeline.failed')}</span>}
+            </div>
+          ))}
+        </details>
+      )}
     </div>
   )
 }

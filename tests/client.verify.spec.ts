@@ -25,7 +25,7 @@ import { OutputPane } from '../src/client/panes/OutputPane.tsx'
 import { AgentBadge as AgentBadgeView, agentBadgeText } from '../src/client/components/AgentBadge.tsx'
 import { agentOptionLabel } from '../src/client/ContextView.tsx'
 import { CoachView } from '../src/client/CoachView.tsx'
-import { ArtifactTree, buildArtifactTree } from '../src/client/CoachView.tsx'
+import { ArtifactTree, buildArtifactTree, buildFileTree, RoundDetail } from '../src/client/CoachView.tsx'
 import { zh, type ContextLocaleKey } from '../src/client/locales/zh-CN.ts'
 import { en } from '../src/client/locales/en-US.ts'
 import { aggregateContext } from '../src/host/aggregator.ts'
@@ -748,5 +748,55 @@ describe('E7 · 产物树（v0.2b 文件树 + 新建/更新徽标）', () => {
     for (const expectContain of ['app.js', 'timer.html', '新建', '更新']) {
       expect(html).toContain(expectContain)
     }
+  })
+})
+
+describe('E8 · 时间线三段式（对话/参考/产物 + 过程折叠）', () => {
+  it('RoundDetail SSR：气泡 + 参考文件树 + 产物树 + 过程折叠全部进入渲染', () => {
+    const html = renderToStaticMarkup(createElement(RoundDetail as never, {
+      round: {
+        userText: '重构 checkout 模块',
+        kind: 'initial',
+        signals: { intervention: false, correction: false },
+        references: [
+          { path: 'src/engine.ts', views: 2 },
+          { path: 'src/utils.ts', views: 1 },
+        ],
+        actions: [
+          { name: 'read', path: 'src/engine.ts', failed: false, retried: false },
+          { name: 'bash', path: null, failed: true, retried: true },
+        ],
+        artifacts: [
+          { path: 'src/engine.ts', op: 'update', opCount: 2 },
+          { path: 'timer.css', op: 'create', opCount: 1 },
+        ],
+        assistantText: '已完成重构',
+      },
+      t,
+    } as never))
+    for (const expectContain of [
+      '重构 checkout 模块',        // 对话段用户气泡
+      '已完成重构',                // 对话段助手气泡
+      '参考', 'engine.ts',         // 参考段
+      '产物', '新建', '更新',      // 产物段
+      '过程 · 工具调用', 'bash',   // 过程折叠
+    ]) {
+      expect(html).toContain(expectContain)
+    }
+  })
+
+  it('buildFileTree：参考条目带 viewCount、产物带 outputOp，dir 前字典序', () => {
+    const tree = buildFileTree([
+      { path: 'a.ts', viewCount: 3 },
+      { path: 'src/b.ts', outputOp: 'create' },
+      { path: 'src/c.ts', outputOp: 'update' },
+    ])
+    expect(tree).toEqual([
+      { name: 'src', path: 'src', type: 'dir', children: [
+        { name: 'b.ts', path: 'src/b.ts', type: 'file', outputOp: 'create' },
+        { name: 'c.ts', path: 'src/c.ts', type: 'file', outputOp: 'update' },
+      ] },
+      { name: 'a.ts', path: 'a.ts', type: 'file', viewCount: 3 },
+    ])
   })
 })

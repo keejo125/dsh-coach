@@ -60,7 +60,8 @@ describe('scanCoachRounds · 轮次分界与信号', () => {
     expect(result).toHaveLength(1)
     expect(result[0]?.kind).toBe('initial')
     expect(result[0]?.signals).toEqual({ intervention: false, correction: false })
-    expect(result[0]?.artifacts).toEqual(['engine.ts'])
+    expect(result[0]?.references).toEqual([{ path: 'engine.ts', views: 1 }])
+    expect(result[0]?.artifacts).toEqual([{ path: 'engine.ts', op: 'update', opCount: 1 }])
     expect(result[0]?.actions.map(a => a.name)).toEqual(['read', 'write'])
     expect(result[0]?.assistantText).toBe('已完成重构')
   })
@@ -102,7 +103,7 @@ describe('scanCoachRounds · 轮次分界与信号', () => {
     const result = rounds(events)
     expect(result).toHaveLength(2)
     expect(result[1]?.signals).toEqual({ intervention: true, correction: true })
-    expect(result[1]?.artifacts).toEqual(['a.ts'])
+    expect(result[1]?.artifacts).toEqual([{ path: 'a.ts', op: 'update', opCount: 1 }])
   })
 
   it('plugin 注入消息不产生轮次', () => {

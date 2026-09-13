@@ -560,12 +560,22 @@ export interface CoachTimelineRound {
     /** 该轮存在纠错（介入前工具结果失败）。 */
     correction: boolean
   }
-  /** 该轮工具动作明细（按事件序）。 */
+  /** 本轮引用文件（read 成功，path + 本轮查看次数，首次出现序）。 */
+  references: CoachTimelineReference[]
+  /** 本轮工具动作明细（按事件序；UI 折叠为「过程」）。 */
   actions: CoachTimelineAction[]
-  /** 该轮产物路径（成功 write/edit，规范化相对路径，按首次出现序去重）。 */
-  artifacts: string[]
-  /** 该轮最后一个非空答复文本（截断至 400 字符）。 */
+  /** 本轮产物明细（成功 write/edit：path + 最终操作态 + 本轮操作次数）。 */
+  artifacts: CoachArtifactFile[]
+  /** 本轮最后一个非空答复文本（截断至 400 字符）。 */
   assistantText: string | null
+}
+
+/** 时间线内单个引用文件。 */
+export interface CoachTimelineReference {
+  /** 规范化工作区相对路径。 */
+  path: string
+  /** 本轮内查看次数（read 成功计数）。 */
+  views: number
 }
 
 /** 时间线内的单个工具动作。 */

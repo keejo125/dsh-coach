@@ -268,7 +268,7 @@ describe('dispatchCoachApi · timeline 路由', () => {
     if (!response.body.ok) throw new Error('expected ok')
     expect(response.body.data).toMatchObject({
       sessionId: 'main',
-      rounds: [{ kind: 'initial', userText: '任务', artifacts: ['a.ts'] }],
+      rounds: [{ kind: 'initial', userText: '任务', artifacts: [{ path: 'a.ts', op: 'create', opCount: 1 }] }],
     })
   })
 

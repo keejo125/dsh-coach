@@ -291,6 +291,70 @@
   border-top: 1px dashed var(--dsw-alias-border-l3);
 }
 
+/* ① 对话段：与对话框一致的气泡 */
+.chatBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.chatUser {
+  align-self: flex-end;
+  max-width: 88%;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--dsw-alias-label-primary-inverted);
+  background: var(--dsw-alias-brand-primary);
+  border-radius: 12px 12px 3px 12px;
+  padding: 7px 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chatAssistant {
+  align-self: flex-start;
+  max-width: 92%;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: 12px 12px 12px 3px;
+  padding: 7px 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ② 参考段 / ③ 产物段 */
+.subBlock {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--dsw-alias-border-l3);
+}
+
+.subTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-secondary);
+  margin-bottom: 6px;
+}
+
+/* 过程：工具动作明细，折叠 */
+.processBlock {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--dsw-alias-border-l3);
+}
+
+.processHead {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-tertiary);
+  user-select: none;
+}
+
 .actionRow {
   display: flex;
   align-items: center;

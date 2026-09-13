@@ -21,7 +21,6 @@ import {
   toWorkspacePath,
 } from './metrics.ts'
 import { CoachSessionUnavailableError } from './report.ts'
-
 /** 用户输入/答复文本截断上限（字符）。 */
 const TEXT_LIMIT = 400
 
@@ -79,17 +78,38 @@ export function scanCoachRounds(events: readonly AggregatorEvent[], cwd: string 
 
   /** 当前轮次（以最近一个用户消息为界；无用户消息时不产生轮次）。 */
   let current: CoachTimelineRound | null = null
+  /**
+   * 当前轮累积器：引用计数（path → 本轮查看次数）与产物明细（path → op/opCount）。
+   * 保持非空初始值：TS 对「只在闭包内赋值」的 let 变量在闭包外读取时退回初始类型（null），
+   * 若声明为 | null 会在窄化后退化 never。for 循环首事件前 current 为 null，累积器不会被消费。
+   */
+  let acc: { refs: Map<string, number>; outputs: Map<string, { op: 'create' | 'update'; opCount: number }> } = {
+    refs: new Map(),
+    outputs: new Map(),
+  }
 
   const nextRound = (userText: string, intervention: boolean, correction: boolean): CoachTimelineRound => {
+    // 封口上一轮：把本轮内累积的引用/产物明细写回 round
+    const prev = rounds[rounds.length - 1]
+    if (prev !== undefined) {
+      prev.references = [...acc.refs.entries()].map(([path, views]) => ({ path, views }))
+      prev.artifacts = [...acc.outputs.entries()].map(([path, state]) => ({
+        path,
+        op: state.op,
+        opCount: state.opCount,
+      }))
+    }
     const round: CoachTimelineRound = {
       userText: truncate(userText),
       kind: rounds.length === 0 ? 'initial' : 'followup',
       signals: { intervention, correction },
+      references: [],
       actions: [],
       artifacts: [],
       assistantText: null,
     }
     rounds.push(round)
+    acc = { refs: new Map(), outputs: new Map() }
     return round
   }
 
@@ -151,9 +171,25 @@ export function scanCoachRounds(events: readonly AggregatorEvent[], cwd: string 
         }
         current.actions.push(action)
         if (!failed) {
+          // 参考：read 族成功 → 本轮引用计数（read/read_image/str_replace_editor view）
+          const refPath = referencePath(call, resultData, cwd)
+          if (refPath !== null) acc.refs.set(refPath, (acc.refs.get(refPath) ?? 0) + 1)
+          // 产物：成功 write/edit → 本轮明细（op 判定同 metrics：write 无 diffs 或 create 命令）
           const outputPath = resolveOutputPath(call, resultData, cwd)
-          if (outputPath !== null && !current.artifacts.includes(outputPath)) {
-            current.artifacts.push(outputPath)
+          if (outputPath !== null) {
+            const meta = (resultData['meta'] !== null && typeof resultData['meta'] === 'object' && !Array.isArray(resultData['meta']))
+              ? resultData['meta'] as Record<string, unknown>
+              : undefined
+            const diffs = Array.isArray(meta?.['diffs']) ? meta['diffs'] as unknown[] : []
+            const isCreate = (call.name === 'write' && diffs.length === 0)
+              || (call.name === 'str_replace_editor' && call.args?.['command'] === 'create')
+            const existing = acc.outputs.get(outputPath)
+            if (existing === undefined) {
+              acc.outputs.set(outputPath, { op: isCreate ? 'create' : 'update', opCount: 1 })
+            } else {
+              existing.op = isCreate ? 'create' : existing.op
+              existing.opCount += 1
+            }
           }
         }
       }
@@ -164,7 +200,34 @@ export function scanCoachRounds(events: readonly AggregatorEvent[], cwd: string 
     }
   }
 
+  // 封口最后一轮
+  const last = rounds[rounds.length - 1]
+  if (last !== undefined) {
+    last.references = [...acc.refs.entries()].map(([path, views]) => ({ path, views }))
+    last.artifacts = [...acc.outputs.entries()].map(([path, state]) => ({
+      path,
+      op: state.op,
+      opCount: state.opCount,
+    }))
+  }
   return rounds
+}
+
+/** 引用路径（read/read_image/str_replace_editor view 成功结果才非 null）。 */
+function referencePath(call: CoachCall, data: Record<string, unknown>, cwd: string | undefined): string | null {
+  const args = call.args
+  if (call.name === 'read' || call.name === 'read_image') {
+    const meta = (data['meta'] !== null && typeof data['meta'] === 'object' && !Array.isArray(data['meta']))
+      ? data['meta'] as Record<string, unknown>
+      : undefined
+    const raw = call.name === 'read' ? (meta?.['path'] ?? args?.['file_path']) : args?.['file_path']
+    return toWorkspacePath(raw, cwd)
+  }
+  if (call.name === 'str_replace_editor') {
+    const command = args === null ? undefined : textOf(args['command'])
+    if (command === 'view') return toWorkspacePath(args?.['path'], cwd)
+  }
+  return null
 }
 
 /** 动作的参考/产物路径（read/write/edit/str_replace_editor 才有；其余为 null）。 */
