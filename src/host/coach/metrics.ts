@@ -18,6 +18,16 @@ import type { CoachArtifacts, CoachContextProfile, CoachScope, CoachSignals, Coa
 import type { AggregatorEvent } from '../aggregator.ts'
 
 /** 扫描结果：规模/信号/产物 + completion 维度所需的「最后一个非空答复」观测。 */
+export interface CoachOutputInfo {
+  /** 规范化工作区相对路径。 */
+  path: string
+  /** 最终操作态：create=新建（write 无 diffs 或 str_replace_editor create）；update=更新。 */
+  op: 'create' | 'update'
+  /** 对该文件执行产物操作的次数。 */
+  opCount: number
+}
+
+/** 扫描结果：规模/信号/产物 + completion 维度所需的「最后一个非空答复」观测。 */
 export interface CoachScan {
   scope: CoachScope
   signals: CoachSignals
@@ -31,6 +41,8 @@ export interface CoachScan {
   refCounts: ReadonlyMap<string, number>
   /** 产物路径（成功 write/edit 目标，去重，规范化相对路径）。 */
   outputPaths: readonly string[]
+  /** 产物明细：路径 + 最终操作态（create|update）+ 操作次数（v0.2b 产物树）。 */
+  outputs: readonly CoachOutputInfo[]
   /** Token 投影（assistant/message.data.usage 扫描；无 usage 为 null）。 */
   token: CoachTokenStats | null
   /** 上下文构成计数（轻量投影，不做预算截断判定）。 */
@@ -385,6 +397,9 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
     writtenFiles: outputs.size,
     createdFiles: [...outputs.values()].filter(state => state.op === 'create').length,
     updatedFiles: [...outputs.values()].filter(state => state.opCount >= 2).length,
+    files: [...outputs.entries()]
+      .map(([path, state]) => ({ path, op: state.op, opCount: state.opCount }))
+      .sort((a, b) => a.path.localeCompare(b.path)),
   }
 
   return {
@@ -396,6 +411,11 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
     // v0.2b
     refCounts,
     outputPaths: [...outputs.keys()],
+    outputs: [...outputs.entries()].map(([path, state]) => ({
+      path,
+      op: state.op,
+      opCount: state.opCount,
+    })),
     token,
     context: {
       userItems: contextUserItems,

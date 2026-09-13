@@ -25,6 +25,7 @@ import { OutputPane } from '../src/client/panes/OutputPane.tsx'
 import { AgentBadge as AgentBadgeView, agentBadgeText } from '../src/client/components/AgentBadge.tsx'
 import { agentOptionLabel } from '../src/client/ContextView.tsx'
 import { CoachView } from '../src/client/CoachView.tsx'
+import { ArtifactTree, buildArtifactTree } from '../src/client/CoachView.tsx'
 import { zh, type ContextLocaleKey } from '../src/client/locales/zh-CN.ts'
 import { en } from '../src/client/locales/en-US.ts'
 import { aggregateContext } from '../src/host/aggregator.ts'
@@ -712,6 +713,40 @@ describe('E6 · 复盘 Tab SSR 冒烟（v0.2b）', () => {
       if (!key.startsWith('coach.')) continue
       expect(en[key], `en-US 缺少 ${key}`).toBeDefined()
       expect(typeof en[key]).toBe('string')
+    }
+  })
+})
+
+describe('E7 · 产物树（v0.2b 文件树 + 新建/更新徽标）', () => {
+  it('buildArtifactTree：目录分层、字典序、file 节点带 outputOp', () => {
+    const tree = buildArtifactTree([
+      { path: 'src/app.js', op: 'update', opCount: 2 },
+      { path: 'timer.css', op: 'create', opCount: 1 },
+      { path: 'src/timer.html', op: 'create', opCount: 1 },
+    ])
+    expect(tree).toEqual([
+      {
+        name: 'src', path: 'src', type: 'dir',
+        children: [
+          { name: 'app.js', path: 'src/app.js', type: 'file', outputOp: 'update' },
+          { name: 'timer.html', path: 'src/timer.html', type: 'file', outputOp: 'create' },
+        ],
+      },
+      { name: 'timer.css', path: 'timer.css', type: 'file', outputOp: 'create' },
+    ])
+  })
+
+  it('ArtifactTree SSR：文件树与徽标进入渲染结果', () => {
+    const html = renderToStaticMarkup(createElement(ArtifactTree as never, {
+      files: [
+        { path: 'src/app.js', op: 'update', opCount: 2 },
+        { path: 'src/timer.html', op: 'create', opCount: 1 },
+      ],
+      counts: { writtenFiles: 2, createdFiles: 1, updatedFiles: 1, files: [] },
+      t,
+    } as never))
+    for (const expectContain of ['app.js', 'timer.html', '新建', '更新']) {
+      expect(html).toContain(expectContain)
     }
   })
 })

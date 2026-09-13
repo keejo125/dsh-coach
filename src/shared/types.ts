@@ -414,6 +414,18 @@ export interface CoachArtifacts {
   createdFiles: number
   /** 被修改 ≥ 2 次的文件数（迭代打磨信号）。 */
   updatedFiles: number
+  /** 产物明细（v0.2b 产物树）：每个输出文件的路径、最终操作态与操作次数。 */
+  files: CoachArtifactFile[]
+}
+
+/** 单个产物文件。 */
+export interface CoachArtifactFile {
+  /** 规范化工作区相对路径。 */
+  path: string
+  /** 最终操作态：create=新建；update=更新。 */
+  op: 'create' | 'update'
+  /** 对该文件执行产物操作的次数（≥1；>1 表示迭代打磨）。 */
+  opCount: number
 }
 
 /** 质量分维度标识。 */
@@ -473,6 +485,8 @@ export interface CoachAgentSummary {
   failedToolCalls: number
   /** 写入/编辑过的文件数（去重）。 */
   writtenFiles: number
+  /** 产物明细（v0.2b：并入主会话产物清单；同路径 op 取 create 优先、opCount 相加）。 */
+  files: CoachArtifactFile[]
   /** 是否有非空最终答复。 */
   hasFinalAnswer: boolean
 }

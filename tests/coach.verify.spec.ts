@@ -33,9 +33,23 @@ describe.skipIf(!BASE_AVAILABLE)('coach · 真实 V3 日志对拍', () => {
   it('scanCoachEvents 数值健康：全部有限、非负、互不越界', () => {
     for (const log of logs) {
       const { scope, signals, artifacts } = scanCoachEvents(log.events, '/snapshots/ws')
-      for (const value of [...Object.values(scope), ...Object.values(signals), ...Object.values(artifacts)]) {
+      for (const value of [...Object.values(scope), ...Object.values(signals)]) {
         expect(Number.isFinite(value)).toBe(true)
         expect(value).toBeGreaterThanOrEqual(0)
+      }
+      // artifacts 含 files 数组（v0.2b 产物树）：数值字段单独校验，files 校验元素结构
+      for (const value of Object.values(artifacts)) {
+        if (Array.isArray(value)) {
+          for (const file of value) {
+            expect(Number.isFinite(file.opCount)).toBe(true)
+            expect(file.opCount).toBeGreaterThanOrEqual(1)
+            expect(file.op === 'create' || file.op === 'update').toBe(true)
+            expect(typeof file.path).toBe('string')
+          }
+        } else {
+          expect(Number.isFinite(value)).toBe(true)
+          expect(value).toBeGreaterThanOrEqual(0)
+        }
       }
       expect(scope.userTurns).toBeGreaterThanOrEqual(1) // 三份样本都有用户输入
       expect(scope.turns).toBeGreaterThanOrEqual(1)

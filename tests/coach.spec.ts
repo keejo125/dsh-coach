@@ -76,7 +76,7 @@ describe('scanCoachEvents · 规模', () => {
     const result = scan([])
     expect(result.scope).toEqual({ turns: 0, userTurns: 0, assistantSteps: 0, toolCalls: 0, failedToolCalls: 0, delegations: 0 })
     expect(result.signals).toEqual({ followUps: 0, interventions: 0, correctionTurns: 0, repeatedReadFiles: 0, retriedFailures: 0, compactions: 0 })
-    expect(result.artifacts).toEqual({ writtenFiles: 0, createdFiles: 0, updatedFiles: 0 })
+    expect(result.artifacts).toEqual({ writtenFiles: 0, createdFiles: 0, updatedFiles: 0, files: [] })
     expect(result.lastAssistantText).toBeUndefined()
   })
 
@@ -207,7 +207,10 @@ describe('scanCoachEvents · 产物', () => {
       toolCall(1, 'c1', 'write', { file_path: 'b.txt', content: 'x' }),
       toolResult(1, 'c1', { diffs: [] }),
     ]))
-    expect(result.artifacts).toEqual({ writtenFiles: 1, createdFiles: 1, updatedFiles: 0 })
+    expect(result.artifacts).toEqual({
+      writtenFiles: 1, createdFiles: 1, updatedFiles: 0,
+      files: [{ path: 'b.txt', op: 'create', opCount: 1 }],
+    })
   })
 
   it('同一文件 edit 两次：writtenFiles=1、updatedFiles=1（迭代信号）', () => {

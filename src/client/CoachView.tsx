@@ -6,17 +6,57 @@
  * 六维明细 · 产物清单。数据一次拉取（report + timeline 并行），刷新即重算。
  */
 
-import { useEffect, useState } from 'react'
-import type { CoachReport, CoachTimeline } from '../shared/types.ts'
+import { useEffect, useMemo, useState } from 'react'
+import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachTimeline, FileTreeNode } from '../shared/types.ts'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { CoachApiError, fetchCoachReport, fetchCoachTimeline } from './coach-client.ts'
+import { FileTree } from './components/FileTree.tsx'
+import type { Translate } from './components/AgentBadge.tsx'
 import css from './CoachView.module.css'
 
 export type CoachViewProps = ConvViewProps & PropsLocale<'dsh-coach'>
 
 /** 本 Tab 在 conversation.view 槽位里的条目 id（注册处与深链命中共用）。 */
 export const COACH_VIEW_ID = 'coach'
+
+/** 把产物明细构建为文件树（dir 前、字典序；file 节点带 outputOp 徽标）。导出供 SSR 冒烟测试。 */
+export function buildArtifactTree(files: readonly CoachArtifactFile[]): FileTreeNode[] {
+  interface Builder { files: Map<string, CoachArtifactFile>; dirs: Map<string, Builder> }
+  const tree: Builder = { files: new Map(), dirs: new Map() }
+  for (const file of files) {
+    const segments = file.path.split('/')
+    let level = tree
+    for (let i = 0; i < segments.length - 1; i += 1) {
+      const seg = segments[i] as string
+      let dir = level.dirs.get(seg)
+      if (dir === undefined) {
+        dir = { files: new Map(), dirs: new Map() }
+        level.dirs.set(seg, dir)
+      }
+      level = dir
+    }
+    const name = segments.at(-1)
+    if (name !== undefined) level.files.set(name, file)
+  }
+  const emit = (builder: Builder, parentPath: string): FileTreeNode[] => {
+    const nodes: FileTreeNode[] = []
+    for (const name of [...builder.dirs.keys()].sort((a, b) => a.localeCompare(b))) {
+      const dir = builder.dirs.get(name)
+      if (dir === undefined) continue
+      const path = parentPath.length === 0 ? name : `${parentPath}/${name}`
+      nodes.push({ name, path, type: 'dir', children: emit(dir, path) })
+    }
+    for (const name of [...builder.files.keys()].sort((a, b) => a.localeCompare(b))) {
+      const file = builder.files.get(name)
+      if (file === undefined) continue
+      const path = parentPath.length === 0 ? name : `${parentPath}/${name}`
+      nodes.push({ name, path, type: 'file', outputOp: file.op })
+    }
+    return nodes
+  }
+  return emit(tree, '')
+}
 
 /** 评级档位（spec/09 §3：≥90 优秀 / ≥75 良好 / ≥60 一般 / <60 待改进）。 */
 function ratingOf(score: number): 'excellent' | 'good' | 'fair' | 'poor' {
@@ -322,24 +362,37 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           <div className={css.cardTitle}>{t('coach.artifacts.title')}</div>
           {report.artifacts.writtenFiles === 0
             ? <div className={css.muted}>{t('coach.artifacts.empty')}</div>
-            : (
-              <div className={css.artifactList}>
-                <div className={css.artifactCounts}>
-                  {t('coach.artifacts.created')} {report.artifacts.createdFiles} · {t('coach.artifacts.updated')} {report.artifacts.updatedFiles}
-                </div>
-                {report.artifacts.writtenFiles <= 12 && (
-                  <div className={css.muted}>{t('coach.stats.references')} {report.references.totalFiles} · {t('coach.stats.views')} {report.references.totalViews}</div>
-                )}
-              </div>
-            )}
+            : <ArtifactTree files={report.artifacts.files} counts={report.artifacts} t={t} />}
         </section>
       </div>
     </div>
   )
 }
 
-function Stat({ label, value, danger = false }: { label: string; value: number; danger?: boolean }): JSX.Element {
+/** 产物清单：计数行 + 文件树（dir 展开、file 带新建/更新徽标）。导出供 SSR 冒烟测试。 */
+export function ArtifactTree({
+  files,
+  counts,
+  t,
+}: {
+  files: readonly CoachArtifactFile[]
+  counts: CoachArtifacts
+  t: Translate
+}): JSX.Element {
+  const nodes = useMemo(() => buildArtifactTree(files), [files])
+  const iterated = files.filter(file => file.opCount >= 2).length
   return (
+    <div className={css.artifactTree}>
+      <div className={css.artifactCounts}>
+        {t('coach.artifacts.created')} {counts.createdFiles} · {t('coach.artifacts.updated')} {counts.updatedFiles}
+        {iterated > 0 ? <> · {t('coach.artifacts.iterated', { n: iterated })}</> : null}
+      </div>
+      <FileTree nodes={nodes} t={t} agentsMeta={new Map()} />
+    </div>
+  )
+}
+
+function Stat({ label, value, danger = false }: { label: string; value: number; danger?: boolean }): JSX.Element {  return (
     <div className={css.stat}>
       <b className={danger ? css.danger : undefined}>{value}</b>
       <span>{label}</span>

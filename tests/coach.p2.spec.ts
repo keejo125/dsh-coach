@@ -100,6 +100,42 @@ describe('report · 子智能体汇总', () => {
     expect(reviewer).toMatchObject({ readFiles: 1, toolCalls: 1, failedToolCalls: 0, hasFinalAnswer: true })
     const tester = report.agents.find(a => a.label === 'tester')
     expect(tester).toMatchObject({ writtenFiles: 1, hasFinalAnswer: false })
+    // v0.2b 产物清单：子会话产物并入主清单（全 agent 视角，同 Context 输出树）
+    expect(report.artifacts.writtenFiles).toBe(1)
+    expect(report.artifacts.createdFiles).toBe(1)
+    expect(report.artifacts.updatedFiles).toBe(0)
+    expect(report.artifacts.files).toEqual([{ path: 'engine.spec.ts', op: 'create', opCount: 1 }])
+    expect(tester?.files).toEqual([{ path: 'engine.spec.ts', op: 'create', opCount: 1 }])
+  })
+
+  it('产物合并：主会话与子会话同路径 → op 取 create 优先、opCount 相加', async () => {
+    const engine = makeEngine(
+      {
+        main: {
+          header: { id: 'main', cwd: CWD },
+          events: makeEvents([
+            turnStart(1),
+            userMsg('写文件'),
+            toolCall(1, 'c1', 'edit', { file_path: '/ws/app.ts' }),
+            toolResult(1, 'c1', { diffs: [{ path: '/ws/app.ts' }] }),
+          ]),
+        },
+        child1: {
+          header: { id: 'child1', agentPreset: 'dsh:code' },
+          events: makeEvents([
+            turnStart(1),
+            userMsg('创建文件'),
+            toolCall(1, 'c1', 'write', { file_path: '/ws/app.ts' }),
+            toolResult(1, 'c1', { diffs: [] }),
+          ]),
+        },
+      },
+      { main: ['child1'] },
+    )
+    const report = await buildCoachReport(engine, 'main')
+    expect(report.artifacts.writtenFiles).toBe(1)
+    expect(report.artifacts.files).toEqual([{ path: 'app.ts', op: 'create', opCount: 2 }])
+    expect(report.artifacts.updatedFiles).toBe(1) // opCount 2 ≥ 2 → 迭代信号
   })
 
   it('子会话不可读时跳过（不阻断报告）', async () => {

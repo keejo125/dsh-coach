@@ -9,7 +9,7 @@
  *   （文件名/路径末段子串匹配，宽松口径）。
  */
 
-import type { CoachAgentSummary, CoachReferenceStats, CoachReport } from '../../shared/types.ts'
+import type { CoachAgentSummary, CoachArtifactFile, CoachReferenceStats, CoachReport } from '../../shared/types.ts'
 import type { AggregatorEngine, AggregatorLineageNode } from '../aggregator.ts'
 import { scanCoachEvents } from './metrics.ts'
 import { scoreReport } from './score.ts'
@@ -23,6 +23,24 @@ export class CoachSessionUnavailableError extends Error {
 
 /** 参考 Top 条数。 */
 const TOP_REFERENCES_LIMIT = 10
+
+/**
+ * 合并主会话与全部子会话的产物明细（去重）：
+ * 同路径 opCount 相加；op 取「任一为 create 即 create」（新建优先于更新）。
+ */
+function mergeArtifactFiles(main: readonly CoachArtifactFile[], children: readonly CoachArtifactFile[][]): CoachArtifactFile[] {
+  const byPath = new Map<string, CoachArtifactFile>()
+  for (const file of [...main, ...children.flat()]) {
+    const existing = byPath.get(file.path)
+    if (existing === undefined) {
+      byPath.set(file.path, { path: file.path, op: file.op, opCount: file.opCount })
+    } else {
+      existing.opCount += file.opCount
+      if (file.op === 'create') existing.op = 'create'
+    }
+  }
+  return [...byPath.values()].sort((a, b) => a.path.localeCompare(b.path))
+}
 
 /** 对单个会话生成复盘报告（每次请求即时计算，host 无跨请求状态）。 */
 export async function buildCoachReport(engine: AggregatorEngine, sessionId: string): Promise<CoachReport> {
@@ -44,6 +62,14 @@ export async function buildCoachReport(engine: AggregatorEngine, sessionId: stri
   const scope = { ...scan.scope, delegations }
 
   const agents = lineage === undefined ? [] : await summarizeAgents(engine, lineage.descendants)
+  // 产物清单：主会话 + 全部子会话合并（v0.2b 产物树；与 Context 输出树同为全 agent 视角）
+  const files = mergeArtifactFiles(scan.artifacts.files, agents.map(agent => agent.files))
+  const artifacts: CoachReport['artifacts'] = {
+    writtenFiles: files.length,
+    createdFiles: files.filter(file => file.op === 'create').length,
+    updatedFiles: files.filter(file => file.opCount >= 2).length,
+    files,
+  }
   const references = buildReferences(scan)
   const contextProfile = {
     userItems: scan.context.userItems,
@@ -61,7 +87,7 @@ export async function buildCoachReport(engine: AggregatorEngine, sessionId: stri
     generatedAt: Date.now(),
     scope,
     signals: scan.signals,
-    artifacts: scan.artifacts,
+    artifacts,
     score: scoreReport({
       scope,
       signals: scan.signals,
@@ -106,6 +132,7 @@ async function summarizeAgents(
       toolCalls: childScan.scope.toolCalls,
       failedToolCalls: childScan.scope.failedToolCalls,
       writtenFiles: childScan.artifacts.writtenFiles,
+      files: childScan.artifacts.files,
       hasFinalAnswer: childScan.lastAssistantText !== undefined,
     })
   }
