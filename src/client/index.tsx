@@ -1,42 +1,34 @@
 /**
- * dsh-coach client 入口：注册 conversation.view Tab（id='coach'，order=100，最右）。
- * 注册走 ctx.slots.inject 包裹（卸载即摘除），不传 priority；
- * label 用 `() => t(...)` thunk，跟随活跃 locale 而无需重注册（待明确 #6 定案）。
+ * dsh-coach client 入口（v0.2a 数据层版本）：暂不注册 UI。
+ *
+ * host 端 `/ctx/api` 已停用（与 dsh-context-plugin 并存时前缀冲突），
+ * 继承自 dsh-context 的「上下文」Tab 一并摘除——P1 是纯数据层，页面无变化。
+ * P2（复盘 UI）在本入口注册复盘 Tab（消费 /coach/api/session/:id/report）。
+ *
+ * 保留 LocaleNamespaceMap 的 module 合并：ContextView 等组件的 props 类型
+ * （GlobalStandardProps.t）依赖命名空间注入，文件在 P2 继续使用。
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-// 类型-only：locale 与 conversation.view 槽位行的 Context 合并必须进入本程序
-import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
-// ctx.slots（SlotRegistry）由 ui-renderer 服务合并进 Context，不是 ui-slots：
-// ui-slots 只导出纯槽位注册表的类型与不变量，不带 /client 子路径。
-import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { CONTEXT_VIEW_ID, ContextView } from './ContextView.tsx'
-import { en } from './locales/en-US.ts'
-import { NS, zh, type ContextLocaleKey } from './locales/zh-CN.ts'
+import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type { ContextLocaleKey } from './locales/zh-CN.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
-    /** 上下文 Tab（输入/参考/输出三段聚合视图）文案。 */
+    /** dsh-coach 复盘 UI 文案命名空间（P2 启用）。 */
     'dsh-coach': ContextLocaleKey
   }
 }
 
-/** 所需服务：槽位（Tab 注册）与文案（字典注册与绑定）。 */
-export const inject = ['slots', 'locale']
+export const name = 'dsh-coach'
+
+/** 数据层版本不消费 client 服务；P2 复盘 UI 恢复 slots/locale。 */
+export const inject: string[] = []
 
 /**
- * Client 插件体：注册「上下文」Tab。注册挂在 slots 的 effect 包装上，插件卸载即移除。
- * @param ctx - client 根 context。
+ * Client 插件体（v0.2a）：无 UI，空实现。
+ * @param _ctx - client 根 context（保留签名，P2 复用）。
  */
-export function apply(ctx: Context): void {
-  ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-coach: dictionaries')
-  const t = ctx.locale.bind(NS)
-  ctx.slots.inject('conversation.view', () => ctx.slots.register({
-    name: 'conversation.view',
-    id: CONTEXT_VIEW_ID,
-    order: 100,
-    locale: NS,
-    label: () => t('tab.label'),
-  }, ContextView))
+export function apply(_ctx: Context): void {
+  // P2：在此注册复盘 Tab（id='coach'，消费 /coach/api）
 }

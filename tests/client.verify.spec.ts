@@ -15,7 +15,6 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import * as clientEntry from '../src/client/index.tsx'
-import { ContextView, CONTEXT_VIEW_ID } from '../src/client/ContextView.tsx'
 import { ContextStore, agentMap } from '../src/client/store.ts'
 import { filterTree } from '../src/client/panes/InputPane.tsx'
 import { selectInputGroups } from '../src/client/selectors.ts'
@@ -25,7 +24,7 @@ import { OutputPane } from '../src/client/panes/OutputPane.tsx'
 // 组件与 shared 的 AgentBadge 类型同名，组件侧起别名
 import { AgentBadge as AgentBadgeView, agentBadgeText } from '../src/client/components/AgentBadge.tsx'
 import { agentOptionLabel } from '../src/client/ContextView.tsx'
-import { zh, NS, type ContextLocaleKey } from '../src/client/locales/zh-CN.ts'
+import { zh, type ContextLocaleKey } from '../src/client/locales/zh-CN.ts'
 import { en } from '../src/client/locales/en-US.ts'
 import { aggregateContext } from '../src/host/aggregator.ts'
 import type { AggregatorEngine, AggregatorEvent } from '../src/host/aggregator.ts'
@@ -53,18 +52,13 @@ const t = (key: ContextLocaleKey, params?: Record<string, string | number>): str
   return template.replaceAll(/\{(\w+)\}/g, (_all, name: string) => String(params?.[name] ?? `{${name}}`))
 }
 
-describe('E1 · Tab 注册形状（真调 apply，对照 ui-trajectory 惯例）', () => {
-  it('注入声明含 slots；注册包在 ctx.slots.inject 里；不传 priority', () => {
+describe('E1 · client 入口（v0.2a 数据层版本）', () => {
+  it('不注册任何 UI Tab（/ctx/api 已停用；P2 复盘 UI 再注册）', () => {
     const registered: Array<{ name: string; options: Record<string, unknown>; component: unknown }> = []
     const injected: string[] = []
-    const localeRegistered: Array<{ ns: string; dict: unknown }> = []
 
     const ctx = {
       effect: (fn: () => unknown) => fn(),
-      locale: {
-        register: (ns: string, dict: unknown) => { localeRegistered.push({ ns, dict }); return () => undefined },
-        bind: () => t,
-      },
       slots: {
         inject: (slot: string, factory: () => unknown) => { injected.push(slot); return factory() },
         register: (options: Record<string, unknown>, component: unknown) => {
@@ -75,22 +69,10 @@ describe('E1 · Tab 注册形状（真调 apply，对照 ui-trajectory 惯例）
     }
     clientEntry.apply(ctx as never)
 
-    expect(clientEntry.inject).toContain('slots')
-    expect(clientEntry.inject).toContain('locale')
-    expect(injected).toEqual(['conversation.view'])
-    expect(registered).toHaveLength(1)
-
-    const entry = registered[0]
-    expect(entry?.name).toBe('conversation.view')
-    expect(entry?.component).toBe(ContextView)
-    // §5 验收点：id / order / locale / label 齐备
-    expect(entry?.options).toMatchObject({ id: CONTEXT_VIEW_ID, order: 100, locale: NS })
-    expect(typeof entry?.options['label']).toBe('function')
-    // 动态插件不传 priority（同 id 同 priority 注册会抛）
-    expect(Object.keys(entry?.options ?? {})).not.toContain('priority')
-    expect((entry?.options['label'] as () => string)()).toBe(zh['tab.label'])
-    // 字典按命名空间注册，中英都在
-    expect(localeRegistered).toEqual([{ ns: NS, dict: { zh, en } }])
+    // 数据层版本不消费 slots/locale，页面上无任何变化
+    expect(clientEntry.inject).toEqual([])
+    expect(injected).toEqual([])
+    expect(registered).toHaveLength(0)
   })
 })
 
