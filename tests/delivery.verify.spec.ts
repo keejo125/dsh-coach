@@ -97,6 +97,7 @@ describe('F1 · 交付文件齐备（清单来自设计文档 §2 + v1.1 §11 + 
       'src/host/coach/metrics.ts',
       'src/host/coach/report.ts',
       'src/host/coach/score.ts',
+      'tests/coach.e2e.spec.ts',
       'tests/coach.spec.ts',
       'tests/coach.verify.spec.ts',
     ]) {
