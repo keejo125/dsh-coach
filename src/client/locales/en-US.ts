@@ -113,6 +113,12 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.timeline.references': 'References',
   'coach.timeline.outputs': 'Outputs',
   'coach.timeline.process': 'Process · tool calls',
+  'coach.drawer.title': 'File content',
+  'coach.drawer.close': 'Close',
+  'coach.drawer.zoom': 'Zoom / restore',
+  'coach.drawer.loadFailed': 'Failed to read file',
+  'coach.drawer.fileNotFound': 'File not found',
+  'coach.drawer.truncated': 'File too large, content truncated',
   'coach.agents.title': 'Subagents',
   'coach.agents.empty': 'No subagents this session',
   'coach.agents.readFiles': '{n} files read',
@@ -150,4 +156,5 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.state.error': 'Failed to load review',
   'coach.state.retry': 'Retry',
   'coach.state.empty': 'No review data',
+  'coach.state.loading': 'Loading…',
 }

@@ -16,6 +16,7 @@ import type { CoachApiEnvelope, CoachApiErrorCode } from '../../shared/types.ts'
 import type { AggregatorEngine } from '../aggregator.ts'
 import { buildCoachReport, CoachSessionUnavailableError } from './report.ts'
 import { buildCoachTimeline } from './timeline.ts'
+import { CoachFileAccessError, readCoachWorkspaceFile } from './file-access.ts'
 
 const COACH_API_PREFIX = '/coach/api'
 
@@ -47,6 +48,7 @@ export async function dispatchCoachApi(
   engine: AggregatorEngine,
   method: string,
   pathname: string,
+  query: URLSearchParams = new URLSearchParams(),
 ): Promise<DispatchResponse> {
   try {
     if (method !== 'GET') return fail('COACH_BAD_REQUEST', `method ${method} is not supported`)
@@ -63,10 +65,23 @@ export async function dispatchCoachApi(
       const timeline = await buildCoachTimeline(engine, sessionId)
       return ok(timeline)
     }
+    if (segments[2] === 'file') {
+      const rawPath = query.get('path') ?? ''
+      const log = await engine.readSession(sessionId)
+      const cwd = log.session.cwd
+      if (typeof cwd !== 'string' || cwd.length === 0) {
+        return fail('COACH_BAD_REQUEST', 'session workspace root is unavailable')
+      }
+      const file = await readCoachWorkspaceFile(cwd, rawPath)
+      return ok(file)
+    }
     return fail('COACH_BAD_REQUEST', 'unknown route')
   } catch (error) {
     if (error instanceof CoachSessionUnavailableError) {
       return fail('COACH_SESSION_NOT_FOUND', 'session is unavailable')
+    }
+    if (error instanceof CoachFileAccessError) {
+      return fail(error.code, error.message)
     }
     // 未知异常收敛为 COACH_INTERNAL 且 message 脱敏
     return fail('COACH_INTERNAL', 'internal error')
@@ -84,7 +99,7 @@ export function registerCoachApi(ctx: Context, engine: AggregatorEngine): void {
         const subPath = url.pathname.startsWith(COACH_API_PREFIX)
           ? url.pathname.slice(COACH_API_PREFIX.length)
           : url.pathname
-        const response = await dispatchCoachApi(engine, req.method ?? 'GET', subPath)
+        const response = await dispatchCoachApi(engine, req.method ?? 'GET', subPath, url.searchParams)
         res.statusCode = response.status
         res.setHeader('content-type', 'application/json; charset=utf-8')
         res.setHeader('cache-control', 'no-store')

@@ -11,6 +11,7 @@ import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachTimeline, Coa
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { CoachApiError, fetchCoachReport, fetchCoachTimeline } from './coach-client.ts'
+import { CoachDrawer } from './CoachDrawer.tsx'
 import { FileTree } from './components/FileTree.tsx'
 import type { Translate } from './components/AgentBadge.tsx'
 import css from './CoachView.module.css'
@@ -152,6 +153,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [timeline, setTimeline] = useState<CoachTimeline | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [drawerPath, setDrawerPath] = useState<string | null>(null)
 
   const load = (): void => {
     setLoading(true)
@@ -163,6 +165,9 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       setError(err instanceof CoachApiError ? err.message : t('coach.state.error'))
     }).finally(() => setLoading(false))
   }
+
+  /** 点击参考/产物文件 → 右侧抽屉打开正文。 */
+  const openFile = (path: string): void => { setDrawerPath(path) }
 
   useEffect(() => {
     load()
@@ -236,7 +241,12 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             ? <div className={css.muted}>{t('coach.agents.empty')}</div>
             : report.agents.map(agent => (
               <div key={agent.sessionId} className={css.agentRow}>
-                <div className={css.agentName}>{agent.label}</div>
+                <div className={css.agentName}>
+                  {agent.label}
+                  {agent.task !== null && (
+                    <span className={css.agentTask} title={agent.task}>{agent.task}</span>
+                  )}
+                </div>
                 <div className={css.agentMeta}>
                   {t('coach.agents.readFiles', { n: agent.readFiles })} · {t('coach.agents.toolCalls', { n: agent.toolCalls })}
                   {' · '}{agent.failedToolCalls > 0 ? t('coach.agents.failures', { n: agent.failedToolCalls }) : t('coach.agents.hasFinal')}
@@ -299,6 +309,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 {report.token.perTurn.map(turn => (
                   <div key={turn.turn} className={css.turnRow}>
                     <span className={css.refPath}>R{turn.turn}</span>
+                    <span className={css.turnText} title={turn.text}>{turn.text}</span>
                     <div className={css.barTrack}>
                       <div className={`${css.barFill} ${css.barToken}`} style={{ width: `${Math.min(100, (turn.total / report.token!.total) * 100)}%` }} />
                     </div>
@@ -347,7 +358,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
                 )}
               </summary>
-              <RoundDetail round={round} t={t} />
+              <RoundDetail round={round} t={t} onSelectFile={openFile} />
             </details>
           ))}
       </section>
@@ -365,9 +376,13 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           <div className={css.cardTitle}>{t('coach.artifacts.title')}</div>
           {report.artifacts.writtenFiles === 0
             ? <div className={css.muted}>{t('coach.artifacts.empty')}</div>
-            : <ArtifactTree files={report.artifacts.files} counts={report.artifacts} t={t} />}
+            : <ArtifactTree files={report.artifacts.files} counts={report.artifacts} t={t} onSelectFile={openFile} />}
         </section>
       </div>
+
+      {drawerPath !== null ? (
+        <CoachDrawer sessionId={sessionId} path={drawerPath} t={t} onClose={() => { setDrawerPath(null) }} />
+      ) : null}
     </div>
   )
 }
@@ -377,20 +392,24 @@ export function ArtifactTree({
   files,
   counts,
   t,
+  onSelectFile,
 }: {
   files: readonly CoachArtifactFile[]
   counts: CoachArtifacts
   t: Translate
+  onSelectFile?: (path: string) => void
 }): JSX.Element {
   const nodes = useMemo(() => buildArtifactTree(files), [files])
   const iterated = files.filter(file => file.opCount >= 2).length
+  // FileTree 的 onSelectFile 带 node 参数；对外只暴露 path（exactOptional 下始终传函数）
+  const handleSelect = (path: string, _node: FileTreeNode): void => { onSelectFile?.(path) }
   return (
     <div className={css.artifactTree}>
       <div className={css.artifactCounts}>
         {t('coach.artifacts.created')} {counts.createdFiles} · {t('coach.artifacts.updated')} {counts.updatedFiles}
         {iterated > 0 ? <> · {t('coach.artifacts.iterated', { n: iterated })}</> : null}
       </div>
-      <FileTree nodes={nodes} t={t} agentsMeta={new Map()} />
+      <FileTree nodes={nodes} t={t} agentsMeta={new Map()} onSelectFile={handleSelect} />
     </div>
   )
 }
@@ -406,7 +425,13 @@ function countsForRound(files: readonly CoachArtifactFile[]): CoachArtifacts {
 }
 
 /** 时间线单轮展开：①对话气泡 ②参考文件树 ③产物文件树 + 过程折叠。导出供 SSR 冒烟测试。 */
-export function RoundDetail({ round, t }: { round: CoachTimelineRound; t: Translate }): JSX.Element {
+export function RoundDetail({ round, t, onSelectFile }: {
+  round: CoachTimelineRound
+  t: Translate
+  onSelectFile?: (path: string) => void
+}): JSX.Element {
+  // exactOptionalPropertyTypes：产物树 onSelectFile 始终传函数（内部可选调用）
+  const handleSelectOutputs = (path: string): void => { onSelectFile?.(path) }
   return (
     <div className={css.roundBody}>
       {/* ① 对话段：与对话框一致的气泡 */}
@@ -416,22 +441,26 @@ export function RoundDetail({ round, t }: { round: CoachTimelineRound; t: Transl
           <div className={css.chatAssistant}>{round.assistantText}</div>
         )}
       </div>
-      {/* ② 参考段：本轮读过的文件（viewCount 徽标） */}
-      {round.references.length > 0 && (
-        <div className={css.subBlock}>
-          <div className={css.subTitle}>{t('coach.timeline.references')} {round.references.length}</div>
-          <FileTree
-            nodes={buildFileTree(round.references.map(ref => ({ path: ref.path, viewCount: ref.views })))}
-            t={t}
-            agentsMeta={new Map()}
-          />
-        </div>
-      )}
-      {/* ③ 产物段：本轮产物清单（新建/更新徽标） */}
-      {round.artifacts.length > 0 && (
-        <div className={css.subBlock}>
-          <div className={css.subTitle}>{t('coach.timeline.outputs')} {round.artifacts.length}</div>
-          <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} />
+      {/* ② 参考段 + ③ 产物段：左右并排（面板宽度下比纵向三段更平衡） */}
+      {(round.references.length > 0 || round.artifacts.length > 0) && (
+        <div className={css.subPair}>
+          {round.references.length > 0 && (
+            <div className={css.subBlock}>
+              <div className={css.subTitle}>{t('coach.timeline.references')} {round.references.length}</div>
+              <FileTree
+                nodes={buildFileTree(round.references.map(ref => ({ path: ref.path, viewCount: ref.views })))}
+                t={t}
+                agentsMeta={new Map()}
+                onSelectFile={(path: string, _node: FileTreeNode): void => { onSelectFile?.(path) }}
+              />
+            </div>
+          )}
+          {round.artifacts.length > 0 && (
+            <div className={css.subBlock}>
+              <div className={css.subTitle}>{t('coach.timeline.outputs')} {round.artifacts.length}</div>
+              <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} onSelectFile={handleSelectOutputs} />
+            </div>
+          )}
         </div>
       )}
       {/* 过程：工具动作明细，折叠 */}

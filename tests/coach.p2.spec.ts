@@ -4,8 +4,11 @@
  * timeline 索引与 /coach/api 的 timeline 路由分发。
  */
 
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { buildCoachReport } from '../src/host/coach/report.ts'
+import { buildCoachReport, extractAgentTask } from '../src/host/coach/report.ts'
 import { dispatchCoachApi } from '../src/host/coach/api.ts'
 import type { AggregatorEngine, AggregatorEvent, AggregatorLineageNode, AggregatorSessionHeader } from '../src/host/aggregator.ts'
 
@@ -216,7 +219,7 @@ describe('report · Token 投影与上下文构成', () => {
     expect(report.token?.output).toBe(60)
     expect(report.token?.cache).toBe(900)
     expect(report.token?.perTurn).toHaveLength(2)
-    expect(report.token?.perTurn[0]).toEqual({ turn: 1, input: 100, output: 50, total: 950 })
+    expect(report.token?.perTurn[0]).toEqual({ turn: 1, input: 100, output: 50, total: 950, text: '任务' })
   })
 
   it('无 usage 数据 → token 为 null（UI 降级）', async () => {
@@ -276,5 +279,38 @@ describe('dispatchCoachApi · timeline 路由', () => {
     const engine = makeEngine({})
     expect((await dispatchCoachApi(engine, 'GET', '/session/x/unknown')).status).toBe(400)
     expect((await dispatchCoachApi(engine, 'GET', '/session/missing/report')).status).toBe(404)
+  })
+})
+
+describe('file 端点与任务缩写（v0.2b+）', () => {
+  it('GET /session/:id/file：读工作区文件正文；路径穿越被拒', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'dsh-coach-file-'))
+    writeFileSync(join(root, 'a.txt'), 'hello coach')
+    const engine = makeEngine({ main: { header: { id: 'main', cwd: root }, events: [] } })
+    const okRes = await dispatchCoachApi(engine, 'GET', '/session/main/file', new URLSearchParams({ path: 'a.txt' }))
+    expect(okRes.status).toBe(200)
+    if (!okRes.body.ok) throw new Error('expected ok')
+    expect(okRes.body.data).toMatchObject({ path: 'a.txt', text: 'hello coach', truncated: false })
+    // 路径穿越与绝对路径拒绝
+    for (const bad of ['../etc/passwd', '/etc/passwd', 'a/../../b.txt']) {
+      const res = await dispatchCoachApi(engine, 'GET', '/session/main/file', new URLSearchParams({ path: bad }))
+      expect(res.status).toBe(400)
+    }
+  })
+
+  it('extractAgentTask：descriptor 优先，否则首个用户消息，单行截断', () => {
+    const fromUser = extractAgentTask(makeEvents([
+      userMsg('修复登录模块的竞态问题，并补充单元测试', 'user'),
+      userMsg('系统注入', 'plugin'),
+    ]))
+    expect(fromUser).toBe('修复登录模块的竞态问题，并补充单元测试')
+    const fromDescriptor = extractAgentTask(makeEvents([
+      ['subagent/descriptor', { description: '  评估 ui-greeting 包完整性  ' }],
+      userMsg('旧指令', 'user'),
+    ]))
+    expect(fromDescriptor).toBe('评估 ui-greeting 包完整性')
+    const long = extractAgentTask(makeEvents([userMsg('A'.repeat(60), 'user')]))
+    expect(long).toMatch(/^A{39}…$/)
+    expect(extractAgentTask(makeEvents([]))).toBeNull()
   })
 })

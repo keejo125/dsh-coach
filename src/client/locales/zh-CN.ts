@@ -114,6 +114,12 @@ export const zh = {
   'coach.timeline.references': '参考',
   'coach.timeline.outputs': '产物',
   'coach.timeline.process': '过程 · 工具调用',
+  'coach.drawer.title': '文件正文',
+  'coach.drawer.close': '关闭',
+  'coach.drawer.zoom': '放大/还原',
+  'coach.drawer.loadFailed': '文件读取失败',
+  'coach.drawer.fileNotFound': '文件不存在',
+  'coach.drawer.truncated': '文件过大，正文已截断显示',
   'coach.agents.title': '子智能体',
   'coach.agents.empty': '本场无子智能体',
   'coach.agents.readFiles': '读 {n} 文件',
@@ -151,6 +157,7 @@ export const zh = {
   'coach.state.error': '复盘加载失败',
   'coach.state.retry': '重试',
   'coach.state.empty': '暂无复盘数据',
+  'coach.state.loading': '加载中…',
 } as const
 
 /** 本插件字典 key 集合。 */

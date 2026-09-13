@@ -48,3 +48,16 @@ export function fetchCoachReport(sessionId: string, signal?: AbortSignal): Promi
 export function fetchCoachTimeline(sessionId: string, signal?: AbortSignal): Promise<CoachTimeline> {
   return request<CoachTimeline>(`/coach/api/session/${encoded(sessionId)}/timeline`, signal)
 }
+
+/** 文件正文结果。 */
+export interface CoachFileContent {
+  path: string
+  text: string
+  truncated: boolean
+  size: number
+}
+
+/** 拉取文件正文（GET /coach/api/session/:id/file?path=…）。 */
+export function fetchCoachFile(sessionId: string, path: string, signal?: AbortSignal): Promise<CoachFileContent> {
+  return request<CoachFileContent>(`/coach/api/session/${encoded(sessionId)}/file?path=${encodeURIComponent(path)}`, signal)
+}

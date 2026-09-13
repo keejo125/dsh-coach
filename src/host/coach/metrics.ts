@@ -17,6 +17,14 @@ import { normalizeWorkspacePath, relativizeAgainstRoot } from '../../shared/path
 import type { CoachArtifacts, CoachContextProfile, CoachScope, CoachSignals, CoachTokenStats } from '../../shared/types.ts'
 import type { AggregatorEvent } from '../aggregator.ts'
 
+/** Token 分布小标题：单行截断 32 字符。 */
+const TURN_TEXT_LIMIT = 32
+
+function clipTokenTurnText(text: string): string {
+  const oneLine = text.replace(/\s+/g, ' ').trim()
+  return oneLine.length > TURN_TEXT_LIMIT ? `${oneLine.slice(0, TURN_TEXT_LIMIT - 1)}…` : oneLine
+}
+
 /** 扫描结果：规模/信号/产物 + completion 维度所需的「最后一个非空答复」观测。 */
 export interface CoachOutputInfo {
   /** 规范化工作区相对路径。 */
@@ -183,6 +191,8 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   // ===== v0.2b 收集器 =====
   /** 各轮次 token 增量（turn → {input, output, cache}；cache 为该轮最后一次 usage 的快照）。 */
   const tokenByTurn = new Map<number, { input: number; output: number; cache: number }>()
+  /** 各轮次首个用户主动消息文本（turn → 摘要，Token 分布小标题用）。 */
+  const turnTextByTurn = new Map<number, string>()
   /** 最后一条 usage 快照（total/cache 取末条）。 */
   let lastUsage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; totalTokens: number } | undefined
   let contextUserItems = 0
@@ -239,8 +249,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
     const type = event.type
     const data = (event.data !== null && typeof event.data === 'object') ? event.data as Record<string, unknown> : null
 
-    if (type === 'turn/start') {
-      const turn = data?.['turn']
+    if (type === 'turn/start') {      const turn = data?.['turn']
       if (typeof turn === 'number') {
         turns.add(turn)
         currentTurn = turn
@@ -255,6 +264,11 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
           if (lastSubstantiveType === 'tool/result') {
             interventions += 1
             if (lastToolResultError) correctionTurns += 1
+          }
+          const text = extractText(data?.['content']).trim()
+          const turn = currentTurn ?? 0
+          if (text.length > 0 && !turnTextByTurn.has(turn)) {
+            turnTextByTurn.set(turn, clipTokenTurnText(text))
           }
         } else if (sourceKind === 'plugin') {
           contextPluginItems += 1
@@ -362,6 +376,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
         input: bucket.input,
         output: bucket.output,
         total: bucket.input + bucket.output + bucket.cache,
+        text: turnTextByTurn.get(turn) ?? '',
       }))
     // 总量优先取末条 usage.totalTokens；旧日志缺该字段时为 0/undefined，降级为按轮总量最大值
     const lastTotal = typeof lastUsage.totalTokens === 'number' ? lastUsage.totalTokens : 0

@@ -472,6 +472,8 @@ export interface CoachAgentSummary {
   sessionId: string
   /** 展示名（agentPreset 末段；缺失时降级为「子Agent」）。 */
   label: string
+  /** 任务缩写（委派指令/subagent/descriptor 摘要，截断；缺失为 null）。 */
+  task: string | null
   role: 'main' | 'subagent'
   /** 用户主动消息数（该子会话视角）。 */
   userTurns: number
@@ -517,7 +519,7 @@ export interface CoachTokenStats {
   /** 最后一条 cacheReadTokens（累计缓存命中）。 */
   cache: number
   /** 按轮次的增量分布（有 usage 的轮次，按轮次升序）。 */
-  perTurn: Array<{ turn: number; input: number; output: number; total: number }>
+  perTurn: Array<{ turn: number; input: number; output: number; total: number; text: string }>
 }
 
 /** 上下文构成投影（v0.2b）：复用 Context 聚合口径的轻量版（不做预算截断判定）。 */

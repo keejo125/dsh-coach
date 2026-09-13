@@ -10,8 +10,8 @@
  */
 
 import type { CoachAgentSummary, CoachArtifactFile, CoachReferenceStats, CoachReport } from '../../shared/types.ts'
-import type { AggregatorEngine, AggregatorLineageNode } from '../aggregator.ts'
-import { scanCoachEvents } from './metrics.ts'
+import type { AggregatorEngine, AggregatorEvent, AggregatorLineageNode } from '../aggregator.ts'
+import { extractText, scanCoachEvents, textOf } from './metrics.ts'
 import { scoreReport } from './score.ts'
 
 export class CoachSessionUnavailableError extends Error {
@@ -125,6 +125,7 @@ async function summarizeAgents(
     summaries.push({
       sessionId: childId,
       label: labelOf(header.agentPreset),
+      task: extractAgentTask(childLog.events),
       role: 'subagent',
       userTurns: childScan.scope.userTurns,
       delegations: Math.max(0, childScan.scope.userTurns - 1),
@@ -140,10 +141,41 @@ async function summarizeAgents(
 }
 
 /** 展示名：agentPreset 末段；缺失降级「子Agent」。 */
-function labelOf(agentPreset: string | undefined): string {
-  if (agentPreset === undefined || agentPreset.length === 0) return '子Agent'
+function labelOf(agentPreset: string | undefined): string {  if (agentPreset === undefined || agentPreset.length === 0) return '子Agent'
   const last = agentPreset.split(/[\/:]/).pop()
   return last !== undefined && last.length > 0 ? last : '子Agent'
+}
+
+/** 任务缩写上限（字符）。 */
+const AGENT_TASK_LIMIT = 40
+
+/**
+ * 子会话任务缩写：优先 subagent/descriptor 的 description，否则首个用户主动消息（委派指令）。
+ * 单行截断；无可用来源返回 null。
+ */
+export function extractAgentTask(events: readonly AggregatorEvent[]): string | null {
+  for (const event of events) {
+    if (event.type !== 'subagent/descriptor' && event.type !== 'user/message') continue
+    const data = (event.data !== null && typeof event.data === 'object') ? event.data as Record<string, unknown> : null
+    if (event.type === 'subagent/descriptor') {
+      const text = (textOf(data?.['description']) ?? '').trim()
+      if (text.length > 0) return clipTask(text)
+    }
+    const source = data?.['source']
+    const kind = (source !== null && typeof source === 'object')
+      ? (source as Record<string, unknown>)['kind']
+      : undefined
+    if (kind === 'user') {
+      const text = extractText(data?.['content']).trim()
+      if (text.length > 0) return clipTask(text)
+    }
+  }
+  return null
+}
+
+function clipTask(text: string): string {
+  const oneLine = text.replace(/\s+/g, ' ').trim()
+  return oneLine.length > AGENT_TASK_LIMIT ? `${oneLine.slice(0, AGENT_TASK_LIMIT - 1)}…` : oneLine
 }
 
 /** 引用统计：高频 Top + 未使用引用。 */
