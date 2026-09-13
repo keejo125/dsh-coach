@@ -1,0 +1,363 @@
+/* 输入/参考/输出三栏共用样式 */
+
+.pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* —— 栏头：固定不动，内容独立滚动 —— */
+
+.paneHeader {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 10px 8px;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.18);
+}
+
+.paneTitle {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.paneSubtitle {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.paneBody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* —— 普通分区标题 —— */
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.65;
+  padding: 4px 0;
+  flex: none;
+  user-select: none;
+}
+
+/* —— 可收起分区标题 —— */
+
+.collapsibleTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+  padding: 4px 0;
+  cursor: pointer;
+  user-select: none;
+  flex: none;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+}
+
+.collapsibleTitle:hover {
+  opacity: 0.95;
+}
+
+/* —— 系统注入等折叠条 —— */
+
+/* 与 .collapsibleTitle 完全同式样，保证「用户输入」与「系统注入」两个展开条左端对齐 */
+.sectionToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+  cursor: pointer;
+  flex: none;
+  color: inherit;
+  text-align: left;
+}
+
+.sectionToggle:hover {
+  opacity: 0.95;
+  background: rgba(127, 127, 127, 0.06);
+}
+
+.toggleGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.65;
+  width: 14px;
+}
+
+/* —— 卡片：提示词段 / 输出段 —— */
+
+.card {
+  border: 1px solid rgba(127, 127, 127, 0.22);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(127, 127, 127, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.time {
+  font-size: 10px;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardText {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncated {
+  -webkit-line-clamp: 4;
+}
+
+.cardActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.linkButton {
+  border: none;
+  background: transparent;
+  color: #2b62b8;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(64, 128, 220, 0.14);
+}
+
+.injectList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.injectItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border: 1px solid rgba(127, 127, 127, 0.22);
+  background: rgba(127, 127, 127, 0.04);
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.injectItem:hover {
+  background: rgba(127, 127, 127, 0.1);
+}
+
+.injectMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.injectPlugin {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.injectForm {
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(150, 100, 200, 0.16);
+}
+
+.injectSummary {
+  font-weight: 600;
+}
+
+.injectPreview {
+  opacity: 0.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* —— 按 Agent 分组的输入块 —— */
+
+.agentGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid rgba(127, 127, 127, 0.18);
+  padding-top: 8px;
+}
+
+.agentGroup:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.agentGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 条目语义标签：用户输入 / 继承上下文 / 委派指令 / 来自XXX的消息 */
+
+.kindTag {
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(64, 128, 220, 0.14);
+  white-space: nowrap;
+}
+
+.kindDelegation {
+  background: rgba(150, 100, 200, 0.18);
+}
+
+.kindInherited {
+  background: rgba(220, 160, 60, 0.18);
+}
+
+.kindAgentMessage {
+  background: rgba(40, 170, 120, 0.18);
+}
+
+/* 兜底数据（父会话委派调用提取）：次要样式，一眼可辨 */
+
+.provisional {
+  opacity: 0.72;
+  font-style: italic;
+  border-style: dashed;
+}
+
+.provisionalHint {
+  font-size: 10px;
+  opacity: 0.55;
+}
+
+/* 过程段预览提示行 */
+
+.previewHint {
+  font-size: 10px;
+  opacity: 0.55;
+}
+
+/* 「显示过程输出」开关行 */
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  opacity: 0.75;
+  cursor: pointer;
+  flex: none;
+}
+
+.hint {
+  font-size: 11px;
+  opacity: 0.55;
+  text-align: center;
+  padding: 2px 0;
+}
+
+.counts {
+  font-size: 11px;
+  opacity: 0.65;
+  flex: none;
+}
+
+.roundGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.roundToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.75;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+}
+
+.interrupted {
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(179, 38, 30, 0.14);
+  color: #b3261e;
+}
+
+.empty {
+  font-size: 12px;
+  opacity: 0.5;
+  padding: 12px 0;
+  text-align: center;
+}

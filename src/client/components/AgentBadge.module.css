@@ -1,0 +1,64 @@
+/* 徽标外壳：承载 hover 判定与 tooltip 锚点，自身不裁切内容 */
+.badgeWrap {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: rgba(150, 100, 200, 0.18);
+  color: #7a4bb8;
+  white-space: nowrap;
+  max-width: 180px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * 自绘 tooltip：用 **fixed** 而非 absolute。
+ * 三栏（输入/参考/输出）的正文区都是 overflow:auto，absolute 定位的气泡会被
+ * 滚动容器裁掉；fixed 不参与祖先的 overflow 裁切，坐标由 JS 按视口算出。
+ */
+.tip {
+  position: fixed;
+  z-index: 90;
+  max-width: 260px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: rgba(28, 30, 33, 0.96);
+  color: #f4f5f7;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  /* 气泡本身不接鼠标，否则会在指针下抖动/闪烁 */
+  pointer-events: none;
+}
+
+.main {
+  background: rgba(48, 164, 108, 0.16);
+  color: #1d7a4d;
+}
+
+.degraded {
+  font-weight: 700;
+}
+
+/* 块头附带的条目计数 */
+
+.count {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.65;
+  padding-left: 2px;
+}

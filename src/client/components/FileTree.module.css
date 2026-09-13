@@ -1,0 +1,94 @@
+.tree {
+  font-size: 12px;
+  line-height: 1.5;
+  user-select: none;
+}
+
+.rowWrap {
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.rowClickable {
+  cursor: pointer;
+}
+
+.rowClickable:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.glyph {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  opacity: 0.6;
+}
+
+.dirName,
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 60px;
+}
+
+.dirName {
+  font-weight: 600;
+}
+
+.badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
+.viewBadge {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.18);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.opBadge {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 8px;
+  flex: none;
+}
+
+.opCreate {
+  background: rgba(48, 164, 108, 0.22);
+  color: #1d7a4d;
+}
+
+.opUpdate {
+  background: rgba(64, 128, 220, 0.2);
+  color: #2b62b8;
+}
+
+/* 「系统注入」徽标 */
+
+.injectBadge {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: rgba(150, 100, 200, 0.18);
+  color: #6b3fa0;
+  flex: none;
+}

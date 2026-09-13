@@ -1,0 +1,5 @@
+# dsh-coach 的 bundle 层：profile 列用本包时由 dsh plugin add 自动应用。
+# 插件行以包名引用（Node resolution 定位安装后的 lib/index.js）。
+- insert:
+    - id: dsh-coach
+      name: dsh-coach

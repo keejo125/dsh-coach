@@ -1,0 +1,180 @@
+.mask {
+  position: fixed;
+  inset: 0;
+  /* 跟随框架主题：light=rgba(0,0,0,.24) / dark=rgba(0,0,0,.5) */
+  background: var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, 0.32));
+  display: flex;
+  justify-content: flex-end;
+  z-index: 60;
+}
+
+.panel {
+  width: min(560px, 92vw);
+  height: 100%;
+  /* 关键修复：原 background:var(--dsh-surface,#fff) 永远走兜底白底，
+     因框架从未定义 --dsh-surface / --dsh-text（见 ui-theme design-platform.css）。
+     改用框架真正的主题令牌 --dsw-alias-*，由 body[data-ds-dark-theme] 自动切换，
+     抽屉即随 Light/Dark 联动，无需任何 JS。 */
+  background: var(--dsw-alias-bg-layer-1, #ffffff);
+  color: var(--dsw-alias-label-primary, #1f2328);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+
+.zoom {
+  width: 100vw;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2, rgba(127, 127, 127, 0.25));
+  flex: none;
+}
+
+.headerMain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 13px;
+  flex: none;
+}
+
+.path {
+  font-size: 11px;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.views {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-mask-2, rgba(127, 127, 127, 0.18));
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.headerActions {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+/*
+ * 必须显式 `color: inherit`：基座全局 `button` 规则会把字色刷成浅色，而本面板
+ * 底色现走 `var(--dsw-alias-bg-layer-1)`（框架主题令牌，由
+ * `body[data-ds-dark-theme]` 自动切换，亮色白底 / 暗色近黑底）。`color: inherit`
+ * 让按钮字色跟随面板主题字色（--dsw-alias-label-primary）。此前未设 color，按钮
+ * 字色被全局 button 规则带成白色，白底白字几乎看不见。`.iconButton` 是类选择器，
+ * 优先级高于基座的 `button` 元素选择器，可稳定覆盖。
+ * 另加边框与底色（均为主题令牌），让三枚按钮看得出是可点的。
+ */
+.iconButton {
+  border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.35));
+  background: var(--dsw-alias-interactive-bg-hover, rgba(127, 127, 127, 0.08));
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+
+.iconButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover-accent, rgba(127, 127, 127, 0.2));
+  border-color: var(--dsw-alias-border-l4, rgba(127, 127, 127, 0.55));
+}
+
+/* 「打开所在文件夹」失败时的轻量提示：不打断阅读，与正文错误条区分开 */
+.revealError {
+  font-size: 11px;
+  color: var(--dsw-alias-state-error-primary, #b4442f);
+  opacity: 0.85;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px;
+}
+
+.hint {
+  font-size: 12px;
+  opacity: 0.65;
+  padding: 16px 0;
+  text-align: center;
+}
+
+.errorHint {
+  color: var(--dsw-alias-state-error-primary, #b3261e);
+  opacity: 1;
+}
+
+.truncatedHint {
+  font-size: 11px;
+  color: #9a6700;
+  background: rgba(154, 103, 0, 0.12);
+  border-radius: 4px;
+  padding: 2px 8px;
+  margin-bottom: 8px;
+}
+
+.content {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
+
+/* —— 基础高亮（按扩展名；未知类型回落纯文本，不引第三方着色库） —— */
+
+.line {
+  min-height: 1.5em;
+}
+
+.heading {
+  font-weight: 700;
+  color: var(--dsw-alias-label-primary-bluish, #2b62b8);
+}
+
+.marker {
+  color: #1d7a4d;
+}
+
+.quote {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.fence {
+  opacity: 0.6;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.comment {
+  color: var(--dsw-alias-label-tertiary, #6a737d);
+  font-style: italic;
+}
+
+.string {
+  color: var(--dsw-alias-state-error-primary, #b3261e);
+}

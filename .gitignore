@@ -1,0 +1,13 @@
+# 依赖：node_modules 内 @deepseek-ai/* 是指向基座仓库的符号链接，@types/* 指向相邻仓库，
+# 均不可入库（换机器后需按 README「开发」一节重新挂载）。
+node_modules/
+
+# 构建产物（tsdown + tsc types）
+lib/
+
+# 测试临时目录（tests/tmp-root.ts 默认落点）
+.tmp/
+
+# 编辑器与系统噪声
+.DS_Store
+*.tsbuildinfo
