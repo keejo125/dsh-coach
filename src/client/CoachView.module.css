@@ -639,3 +639,17 @@
   color: var(--dsw-alias-state-error-primary);
   font-weight: 600;
 }
+
+/* —— 六维明细两列网格（压缩卡片高度，缓解与产物清单等高后的空白）—— */
+.dimGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14px;
+  row-gap: 2px;
+}
+
+/* 无用户消息轮次（工具处理轮）：弱化占位 */
+.turnTextEmpty {
+  color: var(--dsw-alias-label-tertiary);
+  font-style: italic;
+}

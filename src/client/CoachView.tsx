@@ -135,6 +135,19 @@ function RadarChart({ dimensions }: { dimensions: CoachReport['score']['dimensio
   )
 }
 
+/** 六维明细标签：i18n 双语（完成度 completion），无匹配回退 undefined。 */
+function dimLabelOf(t: Translate, id: string): string | undefined {
+  switch (id) {
+    case 'completion': return t('coach.dim.completion')
+    case 'efficiency': return t('coach.dim.efficiency')
+    case 'recovery': return t('coach.dim.recovery')
+    case 'artifact': return t('coach.dim.artifact')
+    case 'delegation': return t('coach.dim.delegation')
+    case 'context': return t('coach.dim.context')
+    default: return undefined
+  }
+}
+
 /** 评分条（六维明细）。 */
 function ScoreBar({ label, score }: { label: string; score: number }): JSX.Element {
   const tone = score >= 80 ? css.barGood : (score >= 60 ? css.barMid : css.barPoor)
@@ -309,7 +322,9 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 {report.token.perTurn.map(turn => (
                   <div key={turn.turn} className={css.turnRow}>
                     <span className={css.turnTag}>R{turn.turn}</span>
-                    <span className={css.turnText} title={turn.text}>{turn.text}</span>
+                    <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={turn.text}>
+                      {turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}
+                    </span>
                     <div className={css.barTrack}>
                       <div className={`${css.barFill} ${css.barToken}`} style={{ width: `${Math.min(100, (turn.total / report.token!.total) * 100)}%` }} />
                     </div>
@@ -384,9 +399,15 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       <div className={css.grid2}>
         <section className={css.card}>
           <div className={css.cardTitle}>{t('coach.dimensions.title')}</div>
-          {report.score.dimensions.map(dimension => (
-            <ScoreBar key={dimension.id} label={DIMENSION_LABELS[dimension.id] ?? dimension.id} score={dimension.score} />
-          ))}
+          <div className={css.dimGrid}>
+            {report.score.dimensions.map(dimension => (
+              <ScoreBar
+                key={dimension.id}
+                label={dimLabelOf(t, dimension.id) ?? DIMENSION_LABELS[dimension.id] ?? dimension.id}
+                score={dimension.score}
+              />
+            ))}
+          </div>
         </section>
 
         <section className={css.card}>
