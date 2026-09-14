@@ -99,6 +99,7 @@ export async function buildCoachReport(engine: AggregatorEngine, sessionId: stri
     agents,
     references,
     token: scan.token,
+    skills: scan.skills,
     contextProfile,
     timeline: { id: sessionId, rounds: scope.userTurns },
   }

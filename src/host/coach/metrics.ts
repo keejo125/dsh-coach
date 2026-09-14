@@ -14,7 +14,7 @@
 
 import { extractInjectFilePaths } from '../../shared/extract.ts'
 import { normalizeWorkspacePath, relativizeAgainstRoot } from '../../shared/path.ts'
-import type { CoachArtifacts, CoachContextProfile, CoachScope, CoachSignals, CoachTokenStats } from '../../shared/types.ts'
+import type { CoachArtifacts, CoachContextProfile, CoachScope, CoachSignals, CoachSkillStats, CoachTokenStats } from '../../shared/types.ts'
 import type { AggregatorEvent } from '../aggregator.ts'
 
 /** Token 分布小标题：单行截断 32 字符。 */
@@ -53,6 +53,8 @@ export interface CoachScan {
   outputs: readonly CoachOutputInfo[]
   /** Token 投影（assistant/message.data.usage 扫描；无 usage 为 null）。 */
   token: CoachTokenStats | null
+  /** Skill 调用统计（tool/call name='skill' 聚合）。 */
+  skills: CoachSkillStats[]
   /** 上下文构成计数（轻量投影，不做预算截断判定）。 */
   context: Pick<CoachContextProfile, 'userItems' | 'pluginItems' | 'injectFiles' | 'finalSegments' | 'processSegments'>
 }
@@ -193,6 +195,12 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   const tokenByTurn = new Map<number, { input: number; output: number; cache: number }>()
   /** 各轮次首个用户主动消息文本（turn → 摘要，Token 分布小标题用）。 */
   const turnTextByTurn = new Map<number, string>()
+  /** 输入构成估算（字符量）：system/user/tools/plugin。 */
+  const profileChars = { system: 0, user: 0, tools: 0, plugin: 0 }
+  /** Skill 调用（name → {calls, failed}）。 */
+  const skillByCall = new Map<string, { calls: number; failed: number }>()
+  /** 待配对的 skill 调用（callId → skill 名），result 判定成败。 */
+  const skillCalls = new Map<string, string>()
   /** 最后一条 usage 快照（total/cache 取末条）。 */
   let lastUsage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; totalTokens: number } | undefined
   let contextUserItems = 0
@@ -266,6 +274,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
             if (lastToolResultError) correctionTurns += 1
           }
           const text = extractText(data?.['content']).trim()
+          profileChars.user += text.length
           const turn = currentTurn ?? 0
           if (text.length > 0 && !turnTextByTurn.has(turn)) {
             turnTextByTurn.set(turn, clipTokenTurnText(text))
@@ -286,10 +295,20 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
             const summary = form === 'notice' ? textOf(sourceObj['summary']) : undefined
             texts = summary !== undefined && text !== undefined ? [summary, text] : [text ?? '']
           }
+          profileChars.plugin += texts.reduce((sum, item) => sum + item.length, 0)
           const paths = extractInjectFilePaths(form, texts)
           if (paths.length > 0) injectFiles += new Set(paths).size
+        } else if (sourceKind === 'agent-instructions') {
+          const text = extractText(data?.['content']).trim()
+          profileChars.system += text.length
         }
       }
+    } else if (type === 'request/header') {
+      const header = data?.['header']
+      const system = (header !== null && typeof header === 'object')
+        ? textOf((header as Record<string, unknown>)['system'])
+        : undefined
+      if (system !== undefined) profileChars.system += system.length
     } else if (type === 'assistant/message') {
       assistantSteps += 1
       const message = data?.['message']
@@ -331,6 +350,14 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
       if (typeof callId === 'string' && typeof name === 'string') {
         const args = typeof data?.['arguments'] === 'string' ? safeParseArgs(data['arguments'] as string) : null
         calls.set(callId, { name, args })
+        if (typeof data?.['arguments'] === 'string') {
+          profileChars.tools += (data['arguments'] as string).length
+        }
+        // Skill 调用：tool name='skill'，arguments.name 为 skill 名
+        if (name === 'skill') {
+          const skillName = textOf(args?.['name'])
+          if (skillName !== undefined && skillName.length > 0) skillCalls.set(callId, skillName)
+        }
       }
       const turn = data?.['turn']
       if (typeof turn === 'number') turns.add(turn)
@@ -338,9 +365,27 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
       const callId = data === null ? undefined : resolveCallId(data)
       const call = callId === undefined ? undefined : calls.get(callId)
       const failed = data !== null && isErrorResult(data)
+      // Skill 结果配对：计入调用统计
+      const skillName = callId === undefined ? undefined : skillCalls.get(callId)
+      if (skillName !== undefined && call !== undefined) {
+        skillCalls.delete(callId as string)
+        const entry = skillByCall.get(skillName) ?? { calls: 0, failed: 0 }
+        entry.calls += 1
+        if (failed) entry.failed += 1
+        skillByCall.set(skillName, entry)
+      }
       if (call !== undefined) {
         calls.delete(callId as string)
         toolCalls += 1
+        // 输入构成：工具结果文本（message.content）计入 tools
+        const resultText = (() => {
+          const message = data?.['message']
+          if (message !== null && typeof message === 'object') {
+            return extractText((message as Record<string, unknown>)['content']).length
+          }
+          return 0
+        })()
+        profileChars.tools += resultText
         if (failed) {
           failedToolCalls += 1
           const turn = typeof data?.['turn'] === 'number' ? data['turn'] as number : (currentTurn ?? 0)
@@ -386,6 +431,12 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
       output: [...tokenByTurn.values()].reduce((sum, bucket) => sum + bucket.output, 0),
       cache: lastUsage.cacheReadTokens,
       perTurn,
+      profile: {
+        system: profileChars.system,
+        user: profileChars.user,
+        tools: profileChars.tools,
+        plugin: profileChars.plugin,
+      },
     }
   }
 
@@ -432,6 +483,9 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
       opCount: state.opCount,
     })),
     token,
+    skills: [...skillByCall.entries()]
+      .map(([name, entry]) => ({ name, calls: entry.calls, failed: entry.failed }))
+      .sort((a, b) => b.calls - a.calls),
     context: {
       userItems: contextUserItems,
       pluginItems: contextPluginItems,

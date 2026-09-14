@@ -314,3 +314,46 @@ describe('file 端点与任务缩写（v0.2b+）', () => {
     expect(extractAgentTask(makeEvents([]))).toBeNull()
   })
 })
+
+describe('Token 输入构成与 Skill 调用（v0.2b+）', () => {
+  it('profile：system/user/tools/plugin 按事件文本量估算', async () => {
+    const events = makeEvents([
+      ['request/header', { header: { system: 'SYSTEM-XXXX' } }],
+      turnStart(1),
+      userMsg('用户需求描述', 'user'),
+      userMsg('系统注入消息', 'plugin'),
+      ['user/message', { content: [{ type: 'text', text: '系统注入消息' }], message: '系统注入消息', source: { kind: 'plugin', plugin: 'coach', form: 'notice', summary: '系统注入消息' } }],
+      ['user/message', { content: [{ type: 'text', text: '指令注入' }], source: { kind: 'agent-instructions' } }],
+      toolCall(1, 'c1', 'bash', { cmd: 'echo hi' }),
+      toolResult(1, 'c1', { file: 'x' }),
+      assistantMsg(1, 'ok', { inputTokens: 100, outputTokens: 10, totalTokens: 120 }),
+    ])
+    const report = await buildCoachReport(makeEngine({ main: { header: { id: 'main', cwd: CWD }, events } }), 'main')
+    expect(report.token).not.toBeNull()
+    const p = report.token!.profile
+    expect(p).not.toBeNull()
+    expect(p!.system).toBeGreaterThan(0) // request/header.system + agent-instructions
+    expect(p!.user).toBe('用户需求描述'.length)
+    expect(p!.tools).toBeGreaterThan(0) // tool arguments + result
+    expect(p!.plugin).toBe('系统注入消息'.length * 2) // notice：message + summary 双文本
+  })
+
+  it('skills：tool/call name=skill 聚合次数与失败', async () => {
+    const events = makeEvents([
+      turnStart(1),
+      userMsg('用 skill 干点活'),
+      toolCall(1, 's1', 'skill', { name: 'wb-architect' }),
+      toolResult(1, 's1', { ok: true }),
+      toolCall(1, 's2', 'skill', { name: 'wb-architect' }),
+      toolResult(1, 's2', { ok: false }, true),
+      toolCall(1, 's3', 'skill', { name: 'expert-management' }),
+      toolResult(1, 's3', { ok: true }),
+      assistantMsg(1, 'done'),
+    ])
+    const report = await buildCoachReport(makeEngine({ main: { header: { id: 'main', cwd: CWD }, events } }), 'main')
+    expect(report.skills).toEqual([
+      { name: 'wb-architect', calls: 2, failed: 1 },
+      { name: 'expert-management', calls: 1, failed: 0 },
+    ])
+  })
+})

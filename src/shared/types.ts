@@ -458,6 +458,8 @@ export interface CoachReport {
   agents: CoachAgentSummary[]
   /** 文件引用统计（高频 Top + 未使用引用）。 */
   references: CoachReferenceStats
+  /** Skill 调用统计（tool/call name='skill'，按 skill 名聚合）。 */
+  skills: CoachSkillStats[]
   /** Token 投影（官方 usage 字段扫描；无 usage 数据为 null）。 */
   token: CoachTokenStats | null
   /** 上下文构成投影（轻量版，复用 Context 聚合口径）。 */
@@ -508,6 +510,16 @@ export interface CoachReferenceStats {
   totalViews: number
 }
 
+/** 单次 Skill 调用统计（v0.2b+）：tool/call name='skill'。 */
+export interface CoachSkillStats {
+  /** skill 名（arguments.name）。 */
+  name: string
+  /** 调用次数。 */
+  calls: number
+  /** 失败次数（result isError）。 */
+  failed: number
+}
+
 /** Token 投影（v0.2b）：assistant/message.data.usage（官方 token-meter 投影）直接扫描。 */
 export interface CoachTokenStats {
   /** 会话当前总压力（最后一条 usage.totalTokens）。 */
@@ -520,6 +532,12 @@ export interface CoachTokenStats {
   cache: number
   /** 按轮次的增量分布（有 usage 的轮次，按轮次升序）。 */
   perTurn: Array<{ turn: number; input: number; output: number; total: number; text: string }>
+  /**
+   * 输入构成估算（按事件文本字符量，非精确 token 拆解）：
+   * system=request/header.system + agent-instructions；user=用户主动消息；
+   * tools=工具调用参数与结果；plugin=系统注入。仅用于展示输入压力构成。
+   */
+  profile: { system: number; user: number; tools: number; plugin: number } | null
 }
 
 /** 上下文构成投影（v0.2b）：复用 Context 聚合口径的轻量版（不做预算截断判定）。 */

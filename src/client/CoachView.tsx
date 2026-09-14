@@ -308,7 +308,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 </div>
                 {report.token.perTurn.map(turn => (
                   <div key={turn.turn} className={css.turnRow}>
-                    <span className={css.refPath}>R{turn.turn}</span>
+                    <span className={css.turnTag}>R{turn.turn}</span>
                     <span className={css.turnText} title={turn.text}>{turn.text}</span>
                     <div className={css.barTrack}>
                       <div className={`${css.barFill} ${css.barToken}`} style={{ width: `${Math.min(100, (turn.total / report.token!.total) * 100)}%` }} />
@@ -316,6 +316,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                     <span className={css.refViews}>{turn.total.toLocaleString()}</span>
                   </div>
                 ))}
+                {renderTokenProfile(t, report.token.profile)}
               </>
             )}
         </section>
@@ -336,6 +337,22 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             )}
         </section>
       </div>
+
+      {/* Skill 调用 */}
+      {report.skills.length > 0 && (
+        <section className={css.card}>
+          <div className={css.cardTitle}>{t('coach.skills.title')}</div>
+          <div className={css.skillList}>
+            {report.skills.map(skill => (
+              <div key={skill.name} className={css.skillRow}>
+                <span className={css.skillName} title={skill.name}>{skill.name}</span>
+                <span className={css.skillCalls}>{t('coach.skills.calls')} <b>{skill.calls}</b></span>
+                {skill.failed > 0 && <span className={css.skillFailed}>{t('coach.skills.failed')} {skill.failed}</span>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 时间线 */}
       <section className={css.card}>
@@ -495,6 +512,61 @@ function ContextStat({ label, value }: { label: string; value: number }): JSX.El
     <div className={css.contextStat}>
       <b>{value}</b>
       <span>{label}</span>
+    </div>
+  )
+}
+
+/** 输入构成（字符量估算）：系统提示词 / 用户提示词 / 工具调用与结果 / 上下文注入。 */
+function renderTokenProfile(
+  t: Translate,
+  profile: { system: number; user: number; tools: number; plugin: number } | null,
+): JSX.Element | null {
+  if (profile === null) return null
+  const parts = [
+    { key: 'system', value: profile.system },
+    { key: 'user', value: profile.user },
+    { key: 'tools', value: profile.tools },
+    { key: 'plugin', value: profile.plugin },
+  ]
+  const total = parts.reduce((sum, part) => sum + part.value, 0)
+  if (total <= 0) return null
+  const labelOf = (key: string): string => {
+    switch (key) {
+      case 'system': return t('coach.token.profile.system')
+      case 'user': return t('coach.token.profile.user')
+      case 'tools': return t('coach.token.profile.tools')
+      default: return t('coach.token.profile.plugin')
+    }
+  }
+  return (
+    <div className={css.tokenProfile}>
+      <div className={css.tokenProfileTitle}>
+        <span>{t('coach.token.profile.title')}</span>
+        <span className={css.muted}>{t('coach.token.profile.estimate')}</span>
+      </div>
+      <div className={css.profileBar}>
+        {parts
+          .filter(part => part.value > 0)
+          .map(part => (
+            <div
+              key={part.key}
+              className={`${css.profileSeg} ${css[`profileSeg_${part.key}`]}`}
+              style={{ width: `${(part.value / total) * 100}%` }}
+              title={`${labelOf(part.key)} · ${part.value.toLocaleString()}`}
+            />
+          ))}
+      </div>
+      <div className={css.profileLegend}>
+        {parts
+          .filter(part => part.value > 0)
+          .map(part => (
+            <span key={part.key} className={css.profileLegendItem}>
+              <i className={`${css.profileDot} ${css[`profileDot_${part.key}`]}`} />
+              {labelOf(part.key)}
+              <b>{part.value.toLocaleString()}</b>
+            </span>
+          ))}
+      </div>
     </div>
   )
 }
