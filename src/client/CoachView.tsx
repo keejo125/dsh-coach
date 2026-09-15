@@ -148,14 +148,17 @@ function dimLabelOf(t: Translate, id: string): string | undefined {
   }
 }
 
-/** 评分条（六维明细）。 */
-function ScoreBar({ label, score }: { label: string; score: number }): JSX.Element {
+/** 六维明细单维度：中文名 + 进度条 + 数值 + 英文小字（两行结构，避免长标签换行错乱）。 */
+function DimItem({ zh, en, score }: { zh: string; en: string; score: number }): JSX.Element {
   const tone = score >= 80 ? css.barGood : (score >= 60 ? css.barMid : css.barPoor)
   return (
-    <div className={css.scoreRow}>
-      <span className={css.scoreLabel}>{label}</span>
+    <div className={css.dimItem}>
+      <div className={css.dimTop}>
+        <span className={css.dimZh}>{zh}</span>
+        <span className={css.dimScore}>{score}</span>
+      </div>
       <div className={css.barTrack}><div className={`${css.barFill} ${tone}`} style={{ width: `${score}%` }} /></div>
-      <span className={css.scoreValue}>{score}</span>
+      <div className={css.dimEn}>{en}</div>
     </div>
   )
 }
@@ -401,9 +404,10 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           <div className={css.cardTitle}>{t('coach.dimensions.title')}</div>
           <div className={css.dimGrid}>
             {report.score.dimensions.map(dimension => (
-              <ScoreBar
+              <DimItem
                 key={dimension.id}
-                label={dimLabelOf(t, dimension.id) ?? DIMENSION_LABELS[dimension.id] ?? dimension.id}
+                zh={dimLabelOf(t, dimension.id)?.split(' ')[0] ?? DIMENSION_LABELS[dimension.id] ?? dimension.id}
+                en={DIMENSION_LABELS[dimension.id] ?? dimension.id}
                 score={dimension.score}
               />
             ))}

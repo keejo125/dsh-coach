@@ -645,7 +645,32 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 14px;
-  row-gap: 2px;
+  row-gap: 4px;
+}
+
+.dimItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 3px 0;
+}
+
+.dimTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.dimScore {
+  font-weight: 600;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dimEn {
+  font-size: 10.5px;
+  color: var(--dsw-alias-label-tertiary);
 }
 
 /* 无用户消息轮次（工具处理轮）：弱化占位 */
