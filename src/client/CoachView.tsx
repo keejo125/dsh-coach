@@ -163,6 +163,16 @@ function DimItem({ zh, en, score }: { zh: string; en: string; score: number }): 
   )
 }
 
+/** 卡片头：标题 + 副标题（汇总信息一句话，引用分析式）。 */
+function CardHead({ title, sub }: { title: string; sub?: string | undefined }): JSX.Element {
+  return (
+    <div className={css.cardHead}>
+      <div className={css.cardTitle}>{title}</div>
+      {sub !== undefined && sub.length > 0 && <div className={css.cardSub}>{sub}</div>}
+    </div>
+  )
+}
+
 /** 复盘 Tab 根组件。 */
 export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [report, setReport] = useState<CoachReport | null>(null)
@@ -205,6 +215,9 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const lowest = [...report.score.dimensions].sort((a, b) => a.score - b.score)[0]
   const scope = report.scope
   const signals = report.signals
+  const avgDim = Math.round(report.score.dimensions.reduce((sum, d) => sum + d.score, 0) / report.score.dimensions.length)
+  const skillCalls = report.skills.reduce((sum, s) => sum + s.calls, 0)
+  const skillFailed = report.skills.reduce((sum, s) => sum + s.failed, 0)
 
   return (
     <div className={css.wrap}>
@@ -216,10 +229,13 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         <button className={css.refresh} onClick={load}>{t('action.refresh')}</button>
       </div>
 
-      {/* 总分 + 雷达 + 统计 */}
+      {/* 总分 + 雷达 + 统计（汇总层） */}
       <div className={css.grid3}>
         <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.score.title')}</div>
+          <CardHead
+            title={t('coach.score.title')}
+            sub={lowest !== undefined ? t('coach.score.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score }) : undefined}
+          />
           <div className={css.scoreBig}>{report.score.total}</div>
           <span className={css.rating}>{t(`coach.score.rating.${rating}`)}</span>
           {lowest !== undefined && (
@@ -230,12 +246,15 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         </section>
 
         <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.radar.title')}</div>
+          <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
           <RadarChart dimensions={report.score.dimensions} />
         </section>
 
         <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.stats.title')}</div>
+          <CardHead
+            title={t('coach.stats.title')}
+            sub={report.skills.length > 0 ? t('coach.stats.sub', { skills: skillCalls, failed: skillFailed }) : undefined}
+          />
           <div className={css.stats}>
             <Stat label={t('coach.stats.interactions')} value={scope.userTurns} />
             <Stat label={t('coach.stats.followUps')} value={signals.followUps} />
@@ -245,102 +264,57 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             <Stat label={t('coach.stats.failures')} value={scope.failedToolCalls} danger={scope.failedToolCalls > 0} />
             <Stat label={t('coach.stats.compactions')} value={signals.compactions} />
             <Stat label={t('coach.stats.delegations')} value={scope.delegations} />
+            <Stat label={t('coach.stats.skills')} value={skillCalls} danger={skillFailed > 0} />
           </div>
         </section>
       </div>
 
-      {/* 子智能体 + 引用分析 */}
+      {/* Token 分布 + 上下文构成（资源使用） */}
       <div className={css.grid2}>
         <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.agents.title')}</div>
-          {report.agents.length === 0
-            ? <div className={css.muted}>{t('coach.agents.empty')}</div>
-            : report.agents.map(agent => (
-              <div key={agent.sessionId} className={css.agentRow}>
-                <div className={css.agentName}>
-                  {agent.label}
-                  {agent.task !== null && (
-                    <span className={css.agentTask} title={agent.task}>{agent.task}</span>
-                  )}
-                </div>
-                <div className={css.agentMeta}>
-                  {t('coach.agents.readFiles', { n: agent.readFiles })} · {t('coach.agents.toolCalls', { n: agent.toolCalls })}
-                  {' · '}{agent.failedToolCalls > 0 ? t('coach.agents.failures', { n: agent.failedToolCalls }) : t('coach.agents.hasFinal')}
-                  {' · '}{t('coach.agents.writtenFiles', { n: agent.writtenFiles })}
-                </div>
-              </div>
-            ))}
-        </section>
-
-        <section className={css.card}>
-          <div className={css.cardTitle}>
-            {t('coach.references.title')}
-            <span className={css.muted}>
-              {' '}· {t('coach.stats.references')} {report.references.totalFiles} / {t('coach.stats.views')} {report.references.totalViews}
-            </span>
-          </div>
-          <div className={css.sectionLabel}>{t('coach.references.top')}</div>
-          {report.references.topReferences.length === 0
-            ? <div className={css.muted}>{t('coach.references.empty')}</div>
-            : report.references.topReferences.slice(0, 6).map(ref => (
-              <div key={ref.path} className={css.refRow}>
-                <span className={css.refPath} title={ref.path}>{ref.path}</span>
-                <div className={css.barTrack}><div className={`${css.barFill} ${css.barGood}`} style={{ width: `${Math.min(100, ref.views * 20)}%` }} /></div>
-                <span className={css.refViews}>×{ref.views}</span>
-              </div>
-            ))}
-          {report.references.unusedReferences.length > 0 && (
-            <>
-              <div className={css.sectionLabel}>
-                {t('coach.references.unused')}
-                <span className={css.muted}> · {t('coach.references.unusedHint')}</span>
-              </div>
-              {report.references.unusedReferences.slice(0, 4).map(ref => (
-                <div key={ref.path} className={`${css.refRow} ${css.unused}`}>
-                  <span className={css.refPath} title={ref.path}>{ref.path}</span>
-                  <span className={css.refViews}>×{ref.views}</span>
-                </div>
-              ))}
-            </>
-          )}
-        </section>
-      </div>
-
-      {/* Token 分布 + 上下文构成 */}
-      <div className={css.grid2}>
-        <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.token.title')}</div>
+          <CardHead
+            title={t('coach.token.title')}
+            sub={report.token !== null ? t('coach.token.sub', {
+              total: report.token.total.toLocaleString(),
+              input: report.token.input.toLocaleString(),
+              output: report.token.output.toLocaleString(),
+              cache: report.token.cache.toLocaleString(),
+            }) : undefined}
+          />
           {report.token === null
             ? <div className={css.muted}>{t('coach.token.unavailable')}</div>
             : (
               <>
-                <div className={css.tokenTotal}>
-                  {t('coach.token.total')} <b>{report.token.total.toLocaleString()}</b>
-                  <span className={css.muted}>
-                    {' · '}{t('coach.token.input')} {report.token.input.toLocaleString()}
-                    {' · '}{t('coach.token.output')} {report.token.output.toLocaleString()}
-                    {' · '}{t('coach.token.cache')} {report.token.cache.toLocaleString()}
-                  </span>
-                </div>
-                {report.token.perTurn.map(turn => (
-                  <div key={turn.turn} className={css.turnRow}>
-                    <span className={css.turnTag}>R{turn.turn}</span>
-                    <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={turn.text}>
-                      {turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}
-                    </span>
-                    <div className={css.barTrack}>
-                      <div className={`${css.barFill} ${css.barToken}`} style={{ width: `${Math.min(100, (turn.total / report.token!.total) * 100)}%` }} />
-                    </div>
-                    <span className={css.refViews}>{turn.total.toLocaleString()}</span>
-                  </div>
-                ))}
+                {/* 汇总：输入构成（上移，总分原则） */}
                 {renderTokenProfile(t, report.token.profile)}
+                <div className={css.turnList}>
+                  {report.token.perTurn.map(turn => (
+                    <div key={turn.turn} className={css.turnRow}>
+                      <span className={css.turnTag}>R{turn.turn}</span>
+                      <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={turn.text}>
+                        {turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}
+                      </span>
+                      <div className={css.barTrack}>
+                        <div className={`${css.barFill} ${css.barToken}`} style={{ width: `${Math.min(100, (turn.total / report.token!.total) * 100)}%` }} />
+                      </div>
+                      <span className={css.refViews}>{turn.total.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
               </>
             )}
         </section>
 
         <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.context.title')}</div>
+          <CardHead
+            title={t('coach.context.title')}
+            sub={report.contextProfile !== null ? t('coach.context.sub', {
+              user: report.contextProfile.userItems,
+              plugin: report.contextProfile.pluginItems,
+              delegations: report.contextProfile.delegations,
+              inject: report.contextProfile.injectFiles,
+            }) : undefined}
+          />
           {report.contextProfile === null
             ? <div className={css.muted}>{t('coach.stats.none')}</div>
             : (
@@ -356,28 +330,105 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         </section>
       </div>
 
-      {/* Skill 调用 */}
-      {report.skills.length > 0 && (
+      {/* 子智能体 + Skill 调用（被调用的实体，关联并排） */}
+      <div className={css.grid2}>
         <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.skills.title')}</div>
-          <div className={css.skillList}>
-            {report.skills.map(skill => (
-              <div key={skill.name} className={css.skillRow}>
-                <span className={css.skillName} title={skill.name}>{skill.name}</span>
-                <span className={css.skillCalls}>{t('coach.skills.calls')} <b>{skill.calls}</b></span>
-                {skill.failed > 0 && <span className={css.skillFailed}>{t('coach.skills.failed')} {skill.failed}</span>}
+          <CardHead
+            title={t('coach.agents.title')}
+            sub={report.agents.length > 0 ? t('coach.agents.sub', { n: report.agents.length }) : undefined}
+          />
+          {report.agents.length === 0
+            ? <div className={css.muted}>{t('coach.agents.empty')}</div>
+            : (
+              <div className={css.agentList}>
+                {report.agents.map(agent => (
+                  <div key={agent.sessionId} className={css.agentRow}>
+                    <div className={css.agentName}>
+                      {agent.label}
+                      {agent.task !== null && (
+                        <span className={css.agentTask} title={agent.task}>{agent.task}</span>
+                      )}
+                    </div>
+                    <div className={css.agentMeta}>
+                      {t('coach.agents.readFiles', { n: agent.readFiles })} · {t('coach.agents.toolCalls', { n: agent.toolCalls })}
+                      {' · '}{agent.failedToolCalls > 0 ? t('coach.agents.failures', { n: agent.failedToolCalls }) : t('coach.agents.hasFinal')}
+                      {' · '}{t('coach.agents.writtenFiles', { n: agent.writtenFiles })}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
         </section>
-      )}
+
+        {report.skills.length > 0 && (
+          <section className={css.card}>
+            <CardHead
+              title={t('coach.skills.title')}
+              sub={t('coach.skills.sub', { calls: skillCalls, failed: skillFailed })}
+            />
+            <div className={css.skillList}>
+              {report.skills.map(skill => (
+                <div key={skill.name} className={css.skillRow}>
+                  <span className={css.skillName} title={skill.name}>{skill.name}</span>
+                  <span className={css.skillCalls}>{t('coach.skills.calls')} <b>{skill.calls}</b></span>
+                  {skill.failed > 0 && <span className={css.skillFailed}>{t('coach.skills.failed')} {skill.failed}</span>}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* 引用分析（全宽：副标题汇总 + 高频/未使用两段明细，可点） */}
+      <section className={css.card}>
+        <CardHead
+          title={t('coach.references.title')}
+          sub={report.references.totalFiles > 0 ? t('coach.references.sub', {
+            files: report.references.totalFiles,
+            views: report.references.totalViews,
+            unused: report.references.unusedReferences.length,
+          }) : undefined}
+        />
+        {report.references.totalFiles === 0
+          ? <div className={css.muted}>{t('coach.references.empty')}</div>
+          : (
+            <div className={css.refPanels}>
+              <div className={css.refPanel}>
+                <div className={css.sectionLabel}>{t('coach.references.top')}</div>
+                {report.references.topReferences.length === 0
+                  ? <div className={css.muted}>{t('coach.references.empty')}</div>
+                  : report.references.topReferences.slice(0, 8).map(ref => (
+                    <div key={ref.path} className={css.refRow} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
+                      <span className={css.refPath} title={ref.path}>{ref.path}</span>
+                      <div className={css.barTrack}><div className={`${css.barFill} ${css.barGood}`} style={{ width: `${Math.min(100, ref.views * 20)}%` }} /></div>
+                      <span className={css.refViews}>×{ref.views}</span>
+                    </div>
+                  ))}
+              </div>
+              {report.references.unusedReferences.length > 0 && (
+                <div className={css.refPanel}>
+                  <div className={css.sectionLabel}>
+                    {t('coach.references.unused')}
+                    <span className={css.muted}> · {t('coach.references.unusedHint')}</span>
+                  </div>
+                  {report.references.unusedReferences.slice(0, 6).map(ref => (
+                    <div key={ref.path} className={`${css.refRow} ${css.unused}`} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
+                      <span className={css.refPath} title={ref.path}>{ref.path}</span>
+                      <span className={css.refViews}>×{ref.views}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+      </section>
 
       {/* 时间线 */}
       <section className={css.card}>
-        <div className={css.cardTitle}>
-          {t('coach.timeline.title')}
-          <span className={css.muted}> · {t('coach.timeline.expandHint')}</span>
-        </div>
+        <CardHead
+          title={t('coach.timeline.title')}
+          sub={timeline !== null ? t('coach.timeline.sub', { n: timeline.rounds.length }) : t('coach.timeline.expandHint')}
+        />
         {timeline === null || timeline.rounds.length === 0
           ? <div className={css.muted}>{t('coach.timeline.noRounds')}</div>
           : timeline.rounds.map((round, index) => (
@@ -401,7 +452,10 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       {/* 六维明细 + 产物 */}
       <div className={css.grid2}>
         <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.dimensions.title')}</div>
+          <CardHead
+            title={t('coach.dimensions.title')}
+            sub={lowest !== undefined ? t('coach.dimensions.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score }) : undefined}
+          />
           <div className={css.dimGrid}>
             {report.score.dimensions.map(dimension => (
               <DimItem
@@ -415,10 +469,25 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         </section>
 
         <section className={css.card}>
-          <div className={css.cardTitle}>{t('coach.artifacts.title')}</div>
+          <CardHead
+            title={t('coach.artifacts.title')}
+            sub={report.artifacts.writtenFiles > 0 ? (() => {
+              const iterated = report.artifacts.files.filter(file => file.opCount >= 2).length
+              return iterated > 0
+                ? t('coach.artifacts.subIterated', {
+                    created: report.artifacts.createdFiles,
+                    updated: report.artifacts.updatedFiles,
+                    iterated,
+                  })
+                : t('coach.artifacts.sub', {
+                    created: report.artifacts.createdFiles,
+                    updated: report.artifacts.updatedFiles,
+                  })
+            })() : undefined}
+          />
           {report.artifacts.writtenFiles === 0
             ? <div className={css.muted}>{t('coach.artifacts.empty')}</div>
-            : <ArtifactTree files={report.artifacts.files} counts={report.artifacts} t={t} onSelectFile={openFile} />}
+            : <ArtifactTree files={report.artifacts.files} counts={report.artifacts} t={t} onSelectFile={openFile} showCounts={false} />}
         </section>
       </div>
 
@@ -435,11 +504,13 @@ export function ArtifactTree({
   counts,
   t,
   onSelectFile,
+  showCounts = true,
 }: {
   files: readonly CoachArtifactFile[]
   counts: CoachArtifacts
   t: Translate
   onSelectFile?: (path: string) => void
+  showCounts?: boolean
 }): JSX.Element {
   const nodes = useMemo(() => buildArtifactTree(files), [files])
   const iterated = files.filter(file => file.opCount >= 2).length
@@ -447,10 +518,12 @@ export function ArtifactTree({
   const handleSelect = (path: string, _node: FileTreeNode): void => { onSelectFile?.(path) }
   return (
     <div className={css.artifactTree}>
-      <div className={css.artifactCounts}>
-        {t('coach.artifacts.created')} {counts.createdFiles} · {t('coach.artifacts.updated')} {counts.updatedFiles}
-        {iterated > 0 ? <> · {t('coach.artifacts.iterated', { n: iterated })}</> : null}
-      </div>
+      {showCounts && (
+        <div className={css.artifactCounts}>
+          {t('coach.artifacts.created')} {counts.createdFiles} · {t('coach.artifacts.updated')} {counts.updatedFiles}
+          {iterated > 0 ? <> · {t('coach.artifacts.iterated', { n: iterated })}</> : null}
+        </div>
+      )}
       <FileTree nodes={nodes} t={t} agentsMeta={new Map()} onSelectFile={handleSelect} />
     </div>
   )

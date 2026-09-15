@@ -63,7 +63,20 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--dsw-alias-label-primary);
+}
+
+/* 卡片头：标题 + 副标题（汇总信息一句话，引用分析式） */
+.cardHead {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   margin-bottom: 10px;
+}
+
+.cardSub {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--dsw-alias-label-secondary);
 }
 
 .muted {
@@ -143,10 +156,10 @@
   fill: var(--dsw-alias-label-tertiary);
 }
 
-/* —— 统计条 —— */
+/* —— 统计条（9 项：交互/追问/干预/纠错/工具/失败/压缩/子Agent/Skill）—— */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
   gap: 8px;
 }
 
@@ -167,7 +180,13 @@
   color: var(--dsw-alias-state-error-primary);
 }
 
-/* —— 子智能体 —— */
+/* —— 子智能体（列表超限时内部滚动，保证卡片清爽）—— */
+.agentList {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
 .agentRow {
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 10px;
@@ -224,6 +243,28 @@
   font-size: 12px;
   margin-bottom: 5px;
   font-family: ui-monospace, Menlo, monospace;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+.refRow:hover {
+  background: var(--dsw-alias-bg-layer-2);
+}
+
+/* 引用分析：高频 Top / 未使用 两段并排 */
+.refPanels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.refPanel {
+  min-width: 0;
+}
+
+.refPanel .sectionLabel {
+  margin-top: 0;
 }
 
 .refPath {
@@ -252,12 +293,6 @@
 }
 
 /* —— Token —— */
-.tokenTotal {
-  font-size: 13px;
-  margin-bottom: 10px;
-  color: var(--dsw-alias-label-primary);
-}
-
 .turnRow {
   display: flex;
   align-items: center;
@@ -267,15 +302,20 @@
   color: var(--dsw-alias-label-secondary);
 }
 
-/* 轮次小标题：R 标签后的该轮任务摘要，填掉进度条轨道的长空白 */
+/* 轮次小标题：R 标签后的该轮任务摘要，固定宽度保证所有进度条左缘对齐 */
 .turnText {
   flex: none;
-  max-width: 150px;
+  width: 170px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--dsw-alias-label-tertiary);
   font-size: 11px;
+}
+
+/* 轮次明细容器（输入构成汇总在下方的旧结构废弃后统一为列表） */
+.turnList {
+  margin-top: 2px;
 }
 
 /* —— 上下文构成 —— */
@@ -535,11 +575,9 @@
   color: var(--dsw-alias-label-secondary);
 }
 
-/* —— Token 输入构成（字符量估算）—— */
+/* —— Token 输入构成（字符量估算，置于轮次明细上方作汇总）—— */
 .tokenProfile {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--dsw-alias-divider-color);
+  margin-bottom: 10px;
 }
 
 .tokenProfileTitle {
