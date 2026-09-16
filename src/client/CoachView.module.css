@@ -248,11 +248,22 @@
 }
 
 .agentRow {
+  display: block;
+  width: 100%;
+  text-align: left;
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 10px;
   padding: 9px 11px;
   margin-bottom: 8px;
   background: var(--dsw-alias-bg-layer-1);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.agentRow:hover {
+  border-color: var(--dsw-alias-brand-primary, #3d7eff);
+  background: var(--dsw-alias-bg-layer-2);
 }
 
 .agentName {
@@ -410,6 +421,16 @@
   padding: 8px 10px;
   font-size: 12px;
   color: var(--dsw-alias-label-primary);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  font: inherit;
+}
+
+.contextStat:hover {
+  border-color: var(--dsw-alias-brand-primary, #3d7eff);
+  background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.16));
 }
 
 .contextStat b {
@@ -739,6 +760,16 @@
   padding: 6px 8px;
   border-radius: 6px;
   background: var(--dsw-alias-fill-tertiary);
+  border: 1px solid transparent;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+}
+
+.skillRow:hover {
+  border-color: var(--dsw-alias-brand-primary, #3d7eff);
+  background: var(--dsw-alias-bg-layer-2);
 }
 
 .skillName {

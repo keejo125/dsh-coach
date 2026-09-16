@@ -14,8 +14,10 @@ import { CoachApiError, fetchCoachReport, fetchCoachTimeline } from './coach-cli
 import { CoachDrawer } from './CoachDrawer.tsx'
 import { CoachDetailDrawer, type CoachDetailSection } from './CoachDetailDrawer.tsx'
 import { FileTree } from './components/FileTree.tsx'
+import { IconCloseOutline16 } from './icons/index.tsx'
 import type { Translate } from './components/AgentBadge.tsx'
 import css from './CoachView.module.css'
+import detailCss from './CoachDetailDrawer.module.css'
 
 export type CoachViewProps = ConvViewProps & PropsLocale<'dsh-coach'>
 
@@ -195,7 +197,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
-  const [detailDrawer, setDetailDrawer] = useState<'token' | 'context' | null>(null)
+  const [detail, setDetail] = useState<CoachDetail | null>(null)
   const [highlightDim, setHighlightDim] = useState<string | null>(null)
 
   const load = (): void => {
@@ -339,7 +341,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                       </div>
                     ))}
                   {report.token.perTurn.length > 5 && (
-                    <button className={css.turnToggle} onClick={() => setDetailDrawer('token')}>
+                    <button className={css.turnToggle} onClick={() => setDetail({ kind: 'token' })}>
                       {t('coach.token.viewAll', { n: report.token.perTurn.length })} →
                     </button>
                   )}
@@ -362,15 +364,15 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             ? <div className={css.muted}>{t('coach.stats.none')}</div>
             : (
               <div className={css.contextGrid}>
-                <ContextStat label={t('coach.context.userItems')} value={report.contextProfile.userItems} />
-                <ContextStat label={t('coach.context.pluginItems')} value={report.contextProfile.pluginItems} />
-                <ContextStat label={t('coach.context.delegations')} value={report.contextProfile.delegations} />
-                <ContextStat label={t('coach.context.injectFiles')} value={report.contextProfile.injectFiles} />
-                <ContextStat label={t('coach.context.finalSegments')} value={report.contextProfile.finalSegments} />
-                <ContextStat label={t('coach.context.processSegments')} value={report.contextProfile.processSegments} />
+                <ContextStat label={t('coach.context.userItems')} value={report.contextProfile.userItems} onClick={() => setDetail({ kind: 'context', target: 'user' })} />
+                <ContextStat label={t('coach.context.pluginItems')} value={report.contextProfile.pluginItems} onClick={() => setDetail({ kind: 'context', target: 'plugin' })} />
+                <ContextStat label={t('coach.context.delegations')} value={report.contextProfile.delegations} onClick={() => setDetail({ kind: 'context', target: 'delegation' })} />
+                <ContextStat label={t('coach.context.injectFiles')} value={report.contextProfile.injectFiles} onClick={() => setDetail({ kind: 'context', target: 'inject' })} />
+                <ContextStat label={t('coach.context.finalSegments')} value={report.contextProfile.finalSegments} onClick={() => setDetail({ kind: 'context', target: 'final' })} />
+                <ContextStat label={t('coach.context.processSegments')} value={report.contextProfile.processSegments} onClick={() => setDetail({ kind: 'context', target: 'process' })} />
               </div>
             )}
-          <button className={css.turnToggle} onClick={() => setDetailDrawer('context')}>
+          <button className={css.turnToggle} onClick={() => setDetail({ kind: 'contextAll' })}>
             {t('coach.context.viewDetail')} →
           </button>
         </section>
@@ -388,7 +390,13 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             : (
               <div className={css.agentList}>
                 {report.agents.map(agent => (
-                  <div key={agent.sessionId} className={css.agentRow}>
+                  <button
+                    key={agent.sessionId}
+                    className={css.agentRow}
+                    type="button"
+                    onClick={() => setDetail({ kind: 'agent', sessionId: agent.sessionId })}
+                    title={t('coach.agents.viewDetail')}
+                  >
                     <div className={css.agentName}>
                       {agent.label}
                       {agent.task !== null && (
@@ -400,7 +408,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                       {' · '}{agent.failedToolCalls > 0 ? t('coach.agents.failures', { n: agent.failedToolCalls }) : t('coach.agents.hasFinal')}
                       {' · '}{t('coach.agents.writtenFiles', { n: agent.writtenFiles })}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -414,18 +422,24 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             />
             <div className={css.skillList}>
               {report.skills.map(skill => (
-                <div key={skill.name} className={css.skillRow}>
+                <button
+                  key={skill.name}
+                  className={css.skillRow}
+                  type="button"
+                  onClick={() => setDetail({ kind: 'skill', name: skill.name })}
+                  title={t('coach.skills.viewDetail')}
+                >
                   <span className={css.skillName} title={skill.name}>{skill.name}</span>
                   <span className={css.skillCalls}>{t('coach.skills.calls')} <b>{skill.calls}</b></span>
                   {skill.failed > 0 && <span className={css.skillFailed}>{t('coach.skills.failed')} {skill.failed}</span>}
-                </div>
+                </button>
               ))}
             </div>
           </section>
         )}
       </div>
 
-      {/* 时间线 */}
+      {/* 时间线（摘要 + 右侧抽屉全量） */}
       <section className={css.card}>
         <CardHead
           title={t('coach.timeline.title')}
@@ -433,22 +447,26 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         />
         {timeline === null || timeline.rounds.length === 0
           ? <div className={css.muted}>{t('coach.timeline.noRounds')}</div>
-          : timeline.rounds.map((round, index) => (
-            <details key={index} className={css.round}>
-              <summary className={css.roundHead}>
-                <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
-                  {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
-                </span>
-                <span className={css.roundText}>{round.userText}</span>
-                {round.signals.intervention && <span className={css.tagWarn}>{t('coach.timeline.intervention')}</span>}
-                {round.signals.correction && <span className={css.tagError}>{t('coach.timeline.correction')}</span>}
-                {round.artifacts.length > 0 && (
-                  <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
-                )}
-              </summary>
-              <RoundDetail round={round} t={t} onSelectFile={openFile} />
-            </details>
-          ))}
+          : (
+            <>
+              {timeline.rounds.slice(0, 3).map((round, index) => (
+                <div key={index} className={css.roundHead}>
+                  <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
+                    {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
+                  </span>
+                  <span className={css.roundText}>{round.userText}</span>
+                  {round.signals.intervention && <span className={css.tagWarn}>{t('coach.timeline.intervention')}</span>}
+                  {round.signals.correction && <span className={css.tagError}>{t('coach.timeline.correction')}</span>}
+                  {round.artifacts.length > 0 && (
+                    <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
+                  )}
+                </div>
+              ))}
+              <button className={css.turnToggle} onClick={() => setDetail({ kind: 'timeline' })}>
+                {t('coach.timeline.viewAll', { n: timeline.rounds.length })} →
+              </button>
+            </>
+          )}
       </section>
 
       {/* 引用分析 + 产物清单（文件侧：读的引用 vs 写的产物） */}
@@ -524,71 +542,242 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       {drawerPath !== null ? (
         <CoachDrawer sessionId={sessionId} path={drawerPath} t={t} onClose={() => { setDrawerPath(null) }} />
       ) : null}
-      {detailDrawer !== null && report !== null ? (
-        <CoachDetailDrawer
-          title={detailDrawer === 'token' ? t('coach.token.drawerTitle') : t('coach.context.drawerTitle')}
-          sections={detailDrawer === 'token' ? tokenDrawerSections(t, report) : contextDrawerSections(t, report)}
-          t={t}
-          onClose={() => { setDetailDrawer(null) }}
-        />
+      {detail !== null && report !== null ? (
+        detail.kind === 'timeline'
+          ? (
+            <TimelineDrawer
+              rounds={timeline?.rounds ?? []}
+              t={t}
+              onSelectFile={openFile}
+              onClose={() => { setDetail(null) }}
+            />
+          )
+          : (
+            <CoachDetailDrawer
+              title={detailDrawerTitle(detail, report, t)}
+              sections={detailDrawerSections(detail, report, timeline, t)}
+              t={t}
+              onClose={() => { setDetail(null) }}
+            />
+          )
       ) : null}
     </div>
   )
 }
 
-/** Token 抽屉：汇总（输入构成）+ 全量轮次。 */
+/** 下钻目标（右侧抽屉）。 */
+type CoachDetail =
+  | { kind: 'token' }
+  | { kind: 'context'; target: 'user' | 'plugin' | 'delegation' | 'inject' | 'process' | 'final' }
+  | { kind: 'contextAll' }
+  | { kind: 'agent'; sessionId: string }
+  | { kind: 'skill'; name: string }
+  | { kind: 'timeline' }
+
+function detailDrawerTitle(detail: CoachDetail, report: CoachReport, t: Translate): string {
+  switch (detail.kind) {
+    case 'token': return t('coach.token.drawerTitle')
+    case 'context': return t(`coach.context.drawer.${detail.target}`)
+    case 'contextAll': return t('coach.context.drawerTitle')
+    case 'agent': {
+      const agent = report.agents.find(candidate => candidate.sessionId === detail.sessionId)
+      return t('coach.agents.drawerTitle', { name: agent?.label ?? 'Agent' })
+    }
+    case 'skill': return t('coach.skills.drawerTitle', { name: detail.name })
+    case 'timeline': return t('coach.timeline.drawerTitle')
+  }
+}
+
+/** 抽屉内容组装：按下钻目标输出对应分区（bars 可视化 / items 徽章条目）。 */
+function detailDrawerSections(
+  detail: CoachDetail,
+  report: CoachReport,
+  timeline: CoachTimeline | null,
+  t: Translate,
+): CoachDetailSection[] {
+  switch (detail.kind) {
+    case 'token': return tokenDrawerSections(t, report)
+    case 'context': return contextTargetSections(detail.target, report, t)
+    case 'contextAll': return contextTargetSections('all', report, t)
+    case 'agent': {
+      const agent = report.agents.find(candidate => candidate.sessionId === detail.sessionId)
+      if (agent === undefined) return []
+      const sections: CoachDetailSection[] = [
+        { title: t('coach.agents.drawerTask'), items: [agent.task ?? agent.label] },
+        {
+          title: t('coach.agents.drawerMetrics'),
+          items: [
+            `${t('coach.agents.readFiles', { n: agent.readFiles })}`,
+            `${t('coach.agents.toolCalls', { n: agent.toolCalls })}`,
+            agent.failedToolCalls > 0
+              ? { text: t('coach.agents.failures', { n: agent.failedToolCalls }), tone: 'error' }
+              : `${t('coach.agents.failures', { n: 0 })}`,
+            `${t('coach.agents.writtenFiles', { n: agent.writtenFiles })}`,
+          ],
+        },
+      ]
+      if (agent.files.length > 0) {
+        sections.push({
+          title: t('coach.agents.drawerFiles', { n: agent.files.length }),
+          items: agent.files.map(file => ({
+            text: `${file.path} · ${file.op === 'create' ? t('coach.timeline.artifact') : t('coach.timeline.updated')}${file.opCount > 1 ? ` ×${file.opCount}` : ''}`,
+            tone: file.op === 'create' ? 'ok' : 'warn',
+          })),
+        })
+      }
+      return sections
+    }
+    case 'skill': {
+      const skill = report.skills.find(candidate => candidate.name === detail.name)
+      if (skill === undefined) return []
+      const calls = (timeline?.rounds ?? []).flatMap((round, index) =>
+        round.actions
+          .filter(action => action.name === detail.name)
+          .map(action => ({ round: index + 1, failed: action.failed, retried: action.retried, path: action.path })))
+      const sections: CoachDetailSection[] = []
+      if (calls.length > 0) {
+        sections.push({
+          title: t('coach.skills.drawerCalls', { n: calls.length }),
+          items: calls.map(call => ({
+            text: `R${call.round} · ${call.path ?? detail.name}${call.retried ? ` · ${t('coach.timeline.retried')}` : ''}`,
+            tone: call.failed ? 'error' : 'ok',
+          })),
+        })
+      }
+      sections.push({
+        title: t('coach.skills.drawerStats'),
+        items: [
+          `${t('coach.skills.calls')} ${skill.calls}`,
+          skill.failed > 0
+            ? { text: `${t('coach.skills.failed')} ${skill.failed}`, tone: 'error' }
+            : `${t('coach.skills.failed')} 0`,
+        ],
+      })
+      return sections
+    }
+    case 'timeline': return []
+  }
+}
+
+/** Token 抽屉：输入构成 + 全量轮次（bars 占比可视化）。 */
 function tokenDrawerSections(t: Translate, report: CoachReport): CoachDetailSection[] {
   const sections: CoachDetailSection[] = []
   const profile = report.token?.profile
-  if (profile !== undefined) {
+  if (profile !== undefined && profile !== null) {
+    const total = Math.max(1, profile.user + profile.tools + profile.plugin + profile.system)
     sections.push({
       title: t('coach.token.profile.title'),
-      items: [
-        `${t('coach.token.profile.user')} ${profile.user.toLocaleString()}`,
-        `${t('coach.token.profile.tools')} ${profile.tools.toLocaleString()}`,
-        `${t('coach.token.profile.plugin')} ${profile.plugin.toLocaleString()}`,
-        `${t('coach.token.profile.system')} ${profile.system.toLocaleString()}`,
+      bars: [
+        { label: t('coach.token.profile.user'), value: profile.user, total, text: profile.user.toLocaleString() },
+        { label: t('coach.token.profile.tools'), value: profile.tools, total, text: profile.tools.toLocaleString() },
+        { label: t('coach.token.profile.plugin'), value: profile.plugin, total, text: profile.plugin.toLocaleString() },
+        { label: t('coach.token.profile.system'), value: profile.system, total, text: profile.system.toLocaleString() },
       ],
     })
   }
   if (report.token !== null) {
+    const grand = Math.max(1, report.token.perTurn.reduce((sum, turn) => sum + turn.total, 0))
     sections.push({
       title: t('coach.token.allTurnsTitle', { n: report.token.perTurn.length }),
-      items: report.token.perTurn.map(turn => (
-        turn.text.length > 0
-          ? `R${turn.turn} · ${turn.text} · ${turn.total.toLocaleString()}`
-          : `R${turn.turn} · ${t('coach.token.toolTurn')} · ${turn.total.toLocaleString()}`
-      )),
+      bars: report.token.perTurn.map(turn => ({
+        label: `R${turn.turn}`,
+        value: turn.total,
+        total: grand,
+        text: `${turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')} · ${turn.total.toLocaleString()}`,
+      })),
     })
   }
   return sections
 }
 
-/** 上下文抽屉：用户输入 / 系统注入 / 委派指令 / 注入文件。 */
-function contextDrawerSections(t: Translate, report: CoachReport): CoachDetailSection[] {
+/** 上下文抽屉：点击具体数字 → 单节；「查看明细」→ 全量（all）。 */
+function contextTargetSections(
+  target: 'user' | 'plugin' | 'delegation' | 'inject' | 'process' | 'final' | 'all',
+  report: CoachReport,
+  t: Translate,
+): CoachDetailSection[] {
   const profile = report.contextProfile
   if (profile === null) return []
-  const sections: CoachDetailSection[] = [
-    {
-      title: t('coach.context.drawerUser', { n: profile.userItems }),
-      items: profile.userTexts.length > 0 ? profile.userTexts : [t('coach.drawer.noDetail')],
-    },
-    {
-      title: t('coach.context.drawerPlugin', { n: profile.pluginItems }),
-      items: profile.pluginSummaries.length > 0 ? profile.pluginSummaries : [t('coach.drawer.noDetail')],
-    },
-    {
-      title: t('coach.context.drawerDelegations', { n: report.agents.length }),
-      items: report.agents.length > 0
-        ? report.agents.map(agent => agent.task !== null ? agent.task : agent.label)
-        : [t('coach.drawer.noDetail')],
-    },
-    {
-      title: t('coach.context.drawerInject', { n: profile.injectPaths.length }),
-      items: profile.injectPaths.length > 0 ? profile.injectPaths : [t('coach.drawer.noDetail')],
-    },
-  ]
-  return sections.filter(section => section.items.length > 0)
+  const user: CoachDetailSection = {
+    title: t('coach.context.drawerUser', { n: profile.userItems }),
+    items: profile.userTexts.length > 0 ? profile.userTexts : [t('coach.drawer.noDetail')],
+  }
+  const plugin: CoachDetailSection = {
+    title: t('coach.context.drawerPlugin', { n: profile.pluginItems }),
+    items: profile.pluginSummaries.length > 0 ? profile.pluginSummaries : [t('coach.drawer.noDetail')],
+  }
+  const delegation: CoachDetailSection = {
+    title: t('coach.context.drawerDelegations', { n: report.agents.length }),
+    items: report.agents.length > 0
+      ? report.agents.map(agent => agent.task !== null ? agent.task : agent.label)
+      : [t('coach.drawer.noDetail')],
+  }
+  const inject: CoachDetailSection = {
+    title: t('coach.context.drawerInject', { n: profile.injectPaths.length }),
+    items: profile.injectPaths.length > 0 ? profile.injectPaths : [t('coach.drawer.noDetail')],
+  }
+  const counted: CoachDetailSection = {
+    title: t('coach.context.drawerCountOnly'),
+    items: [t('coach.context.drawerCountOnlyHint')],
+  }
+  switch (target) {
+    case 'user': return [user]
+    case 'plugin': return [plugin]
+    case 'delegation': return [delegation]
+    case 'inject': return [inject]
+    case 'process': return [counted]
+    case 'final': return [counted]
+    case 'all':
+      return [user, plugin, delegation, inject].filter(section => (section.items?.length ?? 0) > 0)
+  }
+}
+
+/** 时间线抽屉：全量轮次列表，点击展开三段式明细（对话/参考/产物 + 过程）。 */
+function TimelineDrawer({
+  rounds,
+  t,
+  onSelectFile,
+  onClose,
+}: {
+  rounds: readonly CoachTimelineRound[]
+  t: Translate
+  onSelectFile: (path: string) => void
+  onClose: () => void
+}): JSX.Element {
+  return (
+    <div className={detailCss.mask} onClick={onClose}>
+      <div className={detailCss.panel} onClick={event => event.stopPropagation()}>
+        <div className={detailCss.header}>
+          <div className={detailCss.headerMain}>
+            <span className={detailCss.title}>{t('coach.timeline.drawerTitle', { n: rounds.length })}</span>
+          </div>
+          <button className={detailCss.iconButton} onClick={onClose} aria-label={t('coach.drawer.close')}>
+            <IconCloseOutline16 />
+          </button>
+        </div>
+        <div className={detailCss.body}>
+          {rounds.length === 0
+            ? <div className={detailCss.hint}>{t('coach.timeline.noRounds')}</div>
+            : rounds.map((round, index) => (
+              <details key={index} className={css.round}>
+                <summary className={css.roundHead}>
+                  <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
+                    {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
+                  </span>
+                  <span className={css.roundText}>{round.userText}</span>
+                  {round.signals.intervention && <span className={css.tagWarn}>{t('coach.timeline.intervention')}</span>}
+                  {round.signals.correction && <span className={css.tagError}>{t('coach.timeline.correction')}</span>}
+                  {round.artifacts.length > 0 && (
+                    <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
+                  )}
+                </summary>
+                <RoundDetail round={round} t={t} onSelectFile={onSelectFile} />
+              </details>
+            ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /** 产物清单：计数行 + 文件树（dir 展开、file 带新建/更新徽标）。导出供 SSR 冒烟测试。 */
@@ -698,12 +887,12 @@ function Stat({ label, value, danger = false }: { label: string; value: number; 
   )
 }
 
-function ContextStat({ label, value }: { label: string; value: number }): JSX.Element {
+function ContextStat({ label, value, onClick }: { label: string; value: number; onClick?: () => void }): JSX.Element {
   return (
-    <div className={css.contextStat}>
+    <button className={css.contextStat} onClick={onClick} type="button">
       <b>{value}</b>
       <span>{label}</span>
-    </div>
+    </button>
   )
 }
 

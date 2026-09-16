@@ -4,7 +4,7 @@
   background: var(--dsw-alias-bg-mask-1, rgba(0, 0, 0, 0.32));
   display: flex;
   justify-content: flex-end;
-  z-index: 60;
+  z-index: 55;
 }
 
 .panel {
@@ -84,6 +84,7 @@
   border-bottom: 1px solid var(--dsw-alias-border-l2, rgba(127, 127, 127, 0.25));
 }
 
+/* —— 文本条目（带 tone 徽章）—— */
 .item {
   font-size: 12px;
   line-height: 1.6;
@@ -95,8 +96,68 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  border-left: 3px solid transparent;
 }
 
 .item:hover {
   background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.16));
+}
+
+.toneOk {
+  border-left-color: var(--dsw-alias-state-success-primary, #2e7d32);
+}
+
+.toneError {
+  border-left-color: var(--dsw-alias-state-danger-primary, #d92d20);
+}
+
+.toneWarn {
+  border-left-color: var(--dsw-alias-state-warning-primary, #b54708);
+}
+
+/* —— 条形进度（数值占比可视化）—— */
+.barList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.barLabel {
+  flex: none;
+  width: 120px;
+  font-size: 11.5px;
+  color: var(--dsw-alias-label-secondary, #4e5969);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barTrack {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-2, rgba(127, 127, 127, 0.18));
+  overflow: hidden;
+  min-width: 0;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--dsw-alias-brand-primary, #3d7eff);
+}
+
+.barValue {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--dsw-alias-label-primary, #1f2328);
+  min-width: 56px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
