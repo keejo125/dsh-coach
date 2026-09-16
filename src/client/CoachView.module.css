@@ -79,6 +79,26 @@
   color: var(--dsw-alias-label-secondary);
 }
 
+/* 可点击副标题（短板定位：跳转六维明细） */
+.cardSubLink {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--dsw-alias-label-secondary);
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: fit-content;
+}
+
+.cardSubLink:hover {
+  color: var(--dsw-alias-brand-primary);
+}
+
 .muted {
   font-size: 12px;
   color: var(--dsw-alias-label-secondary);
@@ -252,11 +272,18 @@
   background: var(--dsw-alias-bg-layer-2);
 }
 
-/* 引用分析：高频 Top / 未使用 两段并排 */
+/* 引用分析：高频 Top / 未使用 两段并排；窄屏回退单列 */
 .refPanels {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18px;
+}
+
+@media (max-width: 760px) {
+  .refPanels {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 }
 
 .refPanel {
@@ -316,6 +343,25 @@
 /* 轮次明细容器（输入构成汇总在下方的旧结构废弃后统一为列表） */
 .turnList {
   margin-top: 2px;
+}
+
+/* Token 轮次折叠/展开按钮 */
+.turnToggle {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.turnToggle:hover {
+  color: var(--dsw-alias-brand-primary);
+  border-color: var(--dsw-alias-brand-primary);
 }
 
 /* —— 上下文构成 —— */
@@ -638,6 +684,13 @@
 .profileDot_tools { background: var(--dsw-alias-state-warn-primary); }
 .profileDot_plugin { background: var(--dsw-alias-label-tertiary); }
 
+/* —— 产物清单（树超高时限高内部滚动，与六维明细等高不爆白）—— */
+.artifactScroll {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
 /* —— Skill 调用 —— */
 .skillList {
   display: flex;
@@ -709,6 +762,26 @@
 .dimEn {
   font-size: 10.5px;
   color: var(--dsw-alias-label-tertiary);
+}
+
+/* 维度包装（短板定位滚动锚点 + 高亮动画） */
+.dimWrap {
+  border-radius: 8px;
+  padding: 2px 4px;
+}
+
+.dimHighlight {
+  outline: 1.5px solid var(--dsw-alias-brand-primary);
+  outline-offset: 2px;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent);
+  transition: background 0.4s ease;
+}
+
+/* 维度解读：一行小字填充卡片空白（复盘教练价值） */
+.dimHint {
+  font-size: 10.5px;
+  color: var(--dsw-alias-label-tertiary);
+  line-height: 1.4;
 }
 
 /* 无用户消息轮次（工具处理轮）：弱化占位 */

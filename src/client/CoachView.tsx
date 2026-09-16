@@ -180,6 +180,8 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
+  const [tokenExpanded, setTokenExpanded] = useState(false)
+  const [highlightDim, setHighlightDim] = useState<string | null>(null)
 
   const load = (): void => {
     setLoading(true)
@@ -194,6 +196,13 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
 
   /** 点击参考/产物文件 → 右侧抽屉打开正文。 */
   const openFile = (path: string): void => { setDrawerPath(path) }
+
+  /** 短板定位：点击质量分副标题 → 滚动到六维明细对应维度并短暂高亮。 */
+  const jumpToDimension = (id: string): void => {
+    setHighlightDim(id)
+    document.getElementById(`coach-dim-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    window.setTimeout(() => setHighlightDim(null), 2200)
+  }
 
   useEffect(() => {
     load()
@@ -232,10 +241,18 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       {/* 总分 + 雷达 + 统计（汇总层） */}
       <div className={css.grid3}>
         <section className={css.card}>
-          <CardHead
-            title={t('coach.score.title')}
-            sub={lowest !== undefined ? t('coach.score.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score }) : undefined}
-          />
+          <div className={css.cardHead}>
+            <div className={css.cardTitle}>{t('coach.score.title')}</div>
+            {lowest !== undefined && (
+              <button
+                className={css.cardSubLink}
+                onClick={() => jumpToDimension(lowest.id)}
+                title={t('coach.score.jumpHint')}
+              >
+                {t('coach.score.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score })} →
+              </button>
+            )}
+          </div>
           <div className={css.scoreBig}>{report.score.total}</div>
           <span className={css.rating}>{t(`coach.score.rating.${rating}`)}</span>
           {lowest !== undefined && (
@@ -288,18 +305,27 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 {/* 汇总：输入构成（上移，总分原则） */}
                 {renderTokenProfile(t, report.token.profile)}
                 <div className={css.turnList}>
-                  {report.token.perTurn.map(turn => (
-                    <div key={turn.turn} className={css.turnRow}>
-                      <span className={css.turnTag}>R{turn.turn}</span>
-                      <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={turn.text}>
-                        {turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}
-                      </span>
-                      <div className={css.barTrack}>
-                        <div className={`${css.barFill} ${css.barToken}`} style={{ width: `${Math.min(100, (turn.total / report.token!.total) * 100)}%` }} />
+                  {report.token.perTurn
+                    .slice(0, tokenExpanded ? report.token.perTurn.length : 5)
+                    .map(turn => (
+                      <div key={turn.turn} className={css.turnRow}>
+                        <span className={css.turnTag}>R{turn.turn}</span>
+                        <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={turn.text}>
+                          {turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}
+                        </span>
+                        <div className={css.barTrack}>
+                          <div className={`${css.barFill} ${css.barToken}`} style={{ width: `${Math.min(100, (turn.total / report.token!.total) * 100)}%` }} />
+                        </div>
+                        <span className={css.refViews}>{turn.total.toLocaleString()}</span>
                       </div>
-                      <span className={css.refViews}>{turn.total.toLocaleString()}</span>
-                    </div>
-                  ))}
+                    ))}
+                  {report.token.perTurn.length > 5 && (
+                    <button className={css.turnToggle} onClick={() => setTokenExpanded(v => !v)}>
+                      {tokenExpanded
+                        ? t('coach.token.collapse')
+                        : t('coach.token.expand', { n: report.token.perTurn.length })}
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -458,12 +484,18 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           />
           <div className={css.dimGrid}>
             {report.score.dimensions.map(dimension => (
-              <DimItem
+              <div
                 key={dimension.id}
-                zh={dimLabelOf(t, dimension.id)?.split(' ')[0] ?? DIMENSION_LABELS[dimension.id] ?? dimension.id}
-                en={DIMENSION_LABELS[dimension.id] ?? dimension.id}
-                score={dimension.score}
-              />
+                id={`coach-dim-${dimension.id}`}
+                className={`${css.dimWrap} ${highlightDim === dimension.id ? css.dimHighlight : ''}`}
+              >
+                <DimItem
+                  zh={dimLabelOf(t, dimension.id)?.split(' ')[0] ?? DIMENSION_LABELS[dimension.id] ?? dimension.id}
+                  en={DIMENSION_LABELS[dimension.id] ?? dimension.id}
+                  score={dimension.score}
+                />
+                <div className={css.dimHint}>{t(`coach.dim.hint.${dimension.id}`)}</div>
+              </div>
             ))}
           </div>
         </section>
@@ -487,7 +519,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           />
           {report.artifacts.writtenFiles === 0
             ? <div className={css.muted}>{t('coach.artifacts.empty')}</div>
-            : <ArtifactTree files={report.artifacts.files} counts={report.artifacts} t={t} onSelectFile={openFile} showCounts={false} />}
+            : <div className={css.artifactScroll}><ArtifactTree files={report.artifacts.files} counts={report.artifacts} t={t} onSelectFile={openFile} showCounts={false} /></div>}
         </section>
       </div>
 
