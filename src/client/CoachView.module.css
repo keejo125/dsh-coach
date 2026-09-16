@@ -1202,6 +1202,34 @@
   padding: 0 7px;
 }
 
+/* 标签溢出折叠（>3 个时收成 +N） */
+.tagMore {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-secondary, #4e5969);
+  background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.22));
+  border-radius: 999px;
+  padding: 0 7px;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 键盘焦点可见环（WCAG 2.4.7） */
+.grid :focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary, #3d7eff);
+  outline-offset: 2px;
+}
+
+/* 尊重系统减弱动效：卡片展开/箭头不播动画 */
+@media (prefers-reduced-motion: reduce) {
+  .roundRow,
+  .card,
+  .row {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 @media (max-width: 900px) {
   .topOverview3 {
     grid-template-columns: 1fr;

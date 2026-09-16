@@ -104,7 +104,13 @@ export function CoachDetailDrawer({ title, sections, t, onClose, onSelectItem }:
 
   return (
     <div className={css.mask} onClick={onClose}>
-      <div className={css.panel} onClick={event => event.stopPropagation()}>
+      <div
+        className={css.panel}
+        onClick={event => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         <div className={css.header}>
           <div className={css.headerMain}>
             <span className={css.title}>{title}</span>

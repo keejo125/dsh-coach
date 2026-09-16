@@ -72,9 +72,10 @@
   flex: none;
 }
 
+/* 新建：弱化（低对比灰），避免大量重复徽章抢视觉；更新/迭代：保持醒目的蓝 */
 .opCreate {
-  background: rgba(48, 164, 108, 0.22);
-  color: #1d7a4d;
+  background: rgba(127, 127, 127, 0.14);
+  color: #8a94a3;
 }
 
 .opUpdate {

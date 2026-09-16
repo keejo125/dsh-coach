@@ -620,14 +620,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                     {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
                   </span>
                   <span className={css.roundText}>{round.userText}</span>
-                  {round.signals.intervention && <span className={css.tagWarn}>{t('coach.timeline.intervention')}</span>}
-                  {round.signals.correction && <span className={css.tagError}>{t('coach.timeline.correction')}</span>}
-                  {round.references.length > 0 && (
-                    <span className={css.tagRef}>{t('coach.timeline.refs', { n: round.references.length })}</span>
-                  )}
-                  {round.artifacts.length > 0 && (
-                    <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
-                  )}
+                  {roundTagsOf(round, t, 3)}
                   <span className={css.roundArrow}>{'›'}</span>
                 </button>
               ))}
@@ -890,6 +883,29 @@ function suggestKindLabel(kind: CoachSuggestionKind, t: Translate): string {
   }
 }
 
+/** 时间线轮次标签（干预/纠错/引用/产物），最多显示 limit 个，超出折叠为 +N。 */
+function roundTagsOf(round: CoachTimelineRound, t: Translate, limit: number): JSX.Element[] {
+  const tags: JSX.Element[] = []
+  if (round.signals.intervention) {
+    tags.push(<span key="intervention" className={css.tagWarn}>{t('coach.timeline.intervention')}</span>)
+  }
+  if (round.signals.correction) {
+    tags.push(<span key="correction" className={css.tagError}>{t('coach.timeline.correction')}</span>)
+  }
+  if (round.references.length > 0) {
+    tags.push(<span key="refs" className={css.tagRef}>{t('coach.timeline.refs', { n: round.references.length })}</span>)
+  }
+  if (round.artifacts.length > 0) {
+    tags.push(<span key="artifacts" className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>)
+  }
+  if (tags.length <= limit) return tags
+  const extra = tags.length - limit
+  return [
+    ...tags.slice(0, limit),
+    <span key="more" className={css.tagMore}>+{extra}</span>,
+  ]
+}
+
 /** 时间线抽屉：全量轮次列表，点击展开三段式明细（对话/参考/产物 + 过程）。 */
 function TimelineDrawer({
   rounds,
@@ -907,7 +923,15 @@ function TimelineDrawer({
   const focused = focusIndex === undefined || focusIndex < 0 || focusIndex >= rounds.length ? null : rounds[focusIndex]!
   return (
     <div className={detailCss.mask} onClick={onClose}>
-      <div className={detailCss.panel} onClick={event => event.stopPropagation()}>
+      <div
+        className={detailCss.panel}
+        onClick={event => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={focused !== null
+          ? t('coach.timeline.turnTitle', { n: focusIndex! + 1 })
+          : t('coach.timeline.drawerTitle', { n: rounds.length })}
+      >
         <div className={detailCss.header}>
           <div className={detailCss.headerMain}>
             <span className={detailCss.title}>
@@ -932,11 +956,7 @@ function TimelineDrawer({
                     {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
                   </span>
                   <span className={css.roundText}>{round.userText}</span>
-                  {round.signals.intervention && <span className={css.tagWarn}>{t('coach.timeline.intervention')}</span>}
-                  {round.signals.correction && <span className={css.tagError}>{t('coach.timeline.correction')}</span>}
-                  {round.artifacts.length > 0 && (
-                    <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
-                  )}
+                  {roundTagsOf(round, t, 3)}
                 </summary>
                 <RoundDetail round={round} t={t} onSelectFile={onSelectFile} />
               </details>

@@ -5,6 +5,12 @@
   display: flex;
   justify-content: flex-end;
   z-index: 55;
+  animation: maskIn 0.25s ease-out;
+}
+
+@keyframes maskIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .panel {
@@ -15,6 +21,19 @@
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
+  animation: drawerIn 0.3s ease-out;
+}
+
+@keyframes drawerIn {
+  from { transform: translateX(28px); opacity: 0.5; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mask,
+  .panel {
+    animation: none;
+  }
 }
 
 .header {
@@ -35,9 +54,19 @@
 }
 
 .title {
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 16px;
   flex: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 键盘焦点可见环（WCAG 2.4.7） */
+.panel :focus-visible,
+.mask :focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary, #3d7eff);
+  outline-offset: 2px;
 }
 
 .iconButton {
