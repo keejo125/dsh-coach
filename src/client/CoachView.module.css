@@ -514,11 +514,15 @@
   background: var(--dsw-alias-bg-layer-2);
 }
 
-/* 引用分析：高频 Top / 未使用 两段（并排卡内单栏，避免栏宽不足截断） */
-.refPanels {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
+/* 引用分析：单表（文件名 + 次数 bar + 已用/未用徽章），避免两列表重复 */
+.refTable {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.refTable .refRow {
+  margin-bottom: 0;
 }
 
 .refPanel {

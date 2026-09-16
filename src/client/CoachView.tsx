@@ -540,33 +540,27 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           {report.references.totalFiles === 0
             ? <div className={css.muted}>{t('coach.references.empty')}</div>
             : (
-              <div className={css.refPanels}>
-                <div className={css.refPanel}>
-                  <div className={css.sectionLabel}>{t('coach.references.top')}</div>
-                  {report.references.topReferences.length === 0
-                    ? <div className={css.muted}>{t('coach.references.empty')}</div>
-                    : report.references.topReferences.slice(0, 8).map(ref => (
+              <div className={css.refTable}>
+                {(() => {
+                  const refs = report.references.topReferences
+                  const maxViews = Math.max(1, ...refs.map(ref => ref.views))
+                  return refs.map(ref => {
+                    const unused = report.references.unusedReferences.some(candidate => candidate.path === ref.path)
+                    return (
                       <div key={ref.path} className={css.refRow} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
                         <span className={css.refPath} title={ref.path}>{ref.path}</span>
-                        <div className={css.barTrack}><div className={`${css.barFill} ${css.barGood}`} style={{ width: `${Math.min(100, ref.views * 20)}%` }} /></div>
+                        <div className={css.barTrack}>
+                          <div
+                            className={`${css.barFill} ${unused ? css.barMid : css.barGood}`}
+                            style={{ width: `${Math.max(3, (ref.views / maxViews) * 100)}%` }}
+                          />
+                        </div>
                         <span className={css.refViews}>×{ref.views}</span>
+                        {unused && <span className={css.tagWarn}>{t('coach.references.unusedTag')}</span>}
                       </div>
-                    ))}
-                </div>
-                {report.references.unusedReferences.length > 0 && (
-                  <div className={css.refPanel}>
-                    <div className={css.sectionLabel}>
-                      {t('coach.references.unused')}
-                      <span className={css.muted}> · {t('coach.references.unusedHint')}</span>
-                    </div>
-                    {report.references.unusedReferences.slice(0, 6).map(ref => (
-                      <div key={ref.path} className={`${css.refRow} ${css.unused}`} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
-                        <span className={css.refPath} title={ref.path}>{ref.path}</span>
-                        <span className={css.refViews}>×{ref.views}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                    )
+                  })
+                })()}
               </div>
             )}
         </section>
@@ -575,18 +569,22 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           <CardHead
             title={t('coach.artifacts.title')}
             sub={report.artifacts.writtenFiles > 0 ? (() => {
-              const iterated = report.artifacts.files.filter(file => file.opCount >= 2).length
+              const files = report.artifacts.files
+              // 口径自洽：新建=创建后未再改；更新=其余（含迭代）；新建+更新=总数
+              const created = files.filter(file => file.op === 'create' && file.opCount < 2).length
+              const iterated = files.filter(file => file.opCount >= 2).length
+              const updated = files.length - created
               return iterated > 0
                 ? t('coach.artifacts.subIterated', {
-                    files: report.artifacts.writtenFiles,
-                    created: report.artifacts.createdFiles,
-                    updated: report.artifacts.updatedFiles,
+                    files: files.length,
+                    created,
+                    updated,
                     iterated,
                   })
                 : t('coach.artifacts.sub', {
-                    files: report.artifacts.writtenFiles,
-                    created: report.artifacts.createdFiles,
-                    updated: report.artifacts.updatedFiles,
+                    files: files.length,
+                    created,
+                    updated,
                   })
             })() : undefined}
           />
@@ -964,6 +962,10 @@ export function ArtifactTree({
   showCounts?: boolean
 }): JSX.Element {
   const nodes = useMemo(() => buildArtifactTree(files), [files])
+  void counts // 计数改用 files 重算（口径自洽：新建+更新=总数）
+  // 口径自洽：新建（创建后未再改）+ 更新（其余，含迭代）= 总数
+  const created = files.filter(file => file.op === 'create' && file.opCount < 2).length
+  const updated = files.length - created
   const iterated = files.filter(file => file.opCount >= 2).length
   // FileTree 的 onSelectFile 带 node 参数；对外只暴露 path（exactOptional 下始终传函数）
   const handleSelect = (path: string, _node: FileTreeNode): void => { onSelectFile?.(path) }
@@ -971,7 +973,7 @@ export function ArtifactTree({
     <div className={css.artifactTree}>
       {showCounts && (
         <div className={css.artifactCounts}>
-          {t('coach.artifacts.created')} {counts.createdFiles} · {t('coach.artifacts.updated')} {counts.updatedFiles}
+          {t('coach.artifacts.created')} {created} · {t('coach.artifacts.updated')} {updated}
           {iterated > 0 ? <> · {t('coach.artifacts.iterated', { n: iterated })}</> : null}
         </div>
       )}
