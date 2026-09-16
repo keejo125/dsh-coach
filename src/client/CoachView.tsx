@@ -170,14 +170,6 @@ function RadarChart({
   )
 }
 
-/** 六维分数条色阶：≥90 绿 / 75~89 主色 / 60~74 灰 / <60 红。 */
-function dimBarTone(score: number): string {
-  if (score >= 90) return 'barToneHigh'
-  if (score >= 75) return 'barToneMid'
-  if (score >= 60) return 'barToneLow'
-  return 'barTonePoor'
-}
-
 /** 六维明细标签：i18n 双语（完成度 completion），无匹配回退 undefined。 */
 function dimLabelOf(t: Translate, id: string): string | undefined {
   switch (id) {
@@ -293,37 +285,13 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   </div>
                 </>
               )}
-              <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
             </div>
           </div>
           <div className={css.topCol}>
             <div className={css.topRadar}>
               <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
               <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
-            </div>
-            <div className={css.colTitle}>{t('coach.dims.title')}</div>
-            <div className={css.scoreBars}>
-              {report.score.dimensions
-                .slice()
-                .sort((a, b) => b.score - a.score)
-                .map(dim => (
-                  <button
-                    key={dim.id}
-                    type="button"
-                    className={css.dimBarRow}
-                    onClick={() => jumpToDimension(dim.id)}
-                    title={dimHintOf(t, dim.id)}
-                  >
-                    <span className={css.dimBarLabel}>{dimLabelOf(t, dim.id)?.split(' ')[0] ?? DIMENSION_LABELS[dim.id] ?? dim.id}</span>
-                    <div className={css.dimBarTrack}>
-                      <div
-                        className={`${css.dimBarFill} ${dimBarTone(dim.score)}`}
-                        style={{ width: `${Math.min(100, dim.score)}%` }}
-                      />
-                    </div>
-                    <span className={css.dimBarScore}>{dim.score}</span>
-                  </button>
-                ))}
+              <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
             </div>
           </div>
           <div className={css.topCol}>
