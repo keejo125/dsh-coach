@@ -372,9 +372,6 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 <ContextStat label={t('coach.context.processSegments')} value={report.contextProfile.processSegments} onClick={() => setDetail({ kind: 'context', target: 'process' })} />
               </div>
             )}
-          <button className={css.turnToggle} onClick={() => setDetail({ kind: 'contextAll' })}>
-            {t('coach.context.viewDetail')} →
-          </button>
         </section>
       </div>
 
@@ -558,6 +555,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
               sections={detailDrawerSections(detail, report, timeline, t)}
               t={t}
               onClose={() => { setDetail(null) }}
+              onSelectItem={openFile}
             />
           )
       ) : null}
@@ -622,6 +620,7 @@ function detailDrawerSections(
           items: agent.files.map(file => ({
             text: `${file.path} · ${file.op === 'create' ? t('coach.timeline.artifact') : t('coach.timeline.updated')}${file.opCount > 1 ? ` ×${file.opCount}` : ''}`,
             tone: file.op === 'create' ? 'ok' : 'warn',
+            path: file.path,
           })),
         })
       }
@@ -699,21 +698,23 @@ function contextTargetSections(
   const profile = report.contextProfile
   if (profile === null) return []
   const user: CoachDetailSection = {
-    title: t('coach.context.drawerUser', { n: profile.userItems }),
+    title: t('coach.context.drawerCount', { n: profile.userItems }),
     items: profile.userTexts.length > 0 ? profile.userTexts : [t('coach.drawer.noDetail')],
   }
   const plugin: CoachDetailSection = {
-    title: t('coach.context.drawerPlugin', { n: profile.pluginItems }),
+    title: t('coach.context.drawerCount', { n: profile.pluginItems }),
     items: profile.pluginSummaries.length > 0 ? profile.pluginSummaries : [t('coach.drawer.noDetail')],
   }
   const delegation: CoachDetailSection = {
-    title: t('coach.context.drawerDelegations', { n: report.agents.length }),
-    items: report.agents.length > 0
-      ? report.agents.map(agent => agent.task !== null ? agent.task : agent.label)
-      : [t('coach.drawer.noDetail')],
+    title: t('coach.context.drawerCount', { n: profile.delegationTexts.length > 0 ? profile.delegationTexts.length : report.agents.length }),
+    items: profile.delegationTexts.length > 0
+      ? profile.delegationTexts
+      : report.agents.length > 0
+        ? report.agents.map(agent => agent.task !== null ? agent.task : agent.label)
+        : [t('coach.drawer.noDetail')],
   }
   const inject: CoachDetailSection = {
-    title: t('coach.context.drawerInject', { n: profile.injectPaths.length }),
+    title: t('coach.context.drawerCount', { n: profile.injectPaths.length }),
     items: profile.injectPaths.length > 0 ? profile.injectPaths : [t('coach.drawer.noDetail')],
   }
   const counted: CoachDetailSection = {

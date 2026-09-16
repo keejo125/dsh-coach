@@ -86,17 +86,53 @@
 
 /* —— 文本条目（带 tone 徽章）—— */
 .item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   font-size: 12px;
   line-height: 1.6;
   color: var(--dsw-alias-label-primary, #1f2328);
-  padding: 5px 8px;
+  padding: 6px 8px;
   border-radius: 6px;
   margin-bottom: 4px;
   background: var(--dsw-alias-bg-layer-2, rgba(127, 127, 127, 0.08));
-  white-space: nowrap;
+  border: 1px solid transparent;
+  border-left: 3px solid transparent;
+  text-align: left;
+  font: inherit;
+  width: 100%;
+  cursor: default;
+}
+
+.itemIndex {
+  flex: none;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 5px;
+  background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.2));
+  color: var(--dsw-alias-label-secondary, #4e5969);
+  font-variant-numeric: tabular-nums;
+}
+
+.itemText {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-left: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.itemClickable {
+  cursor: pointer;
+}
+
+.itemClickable:hover {
+  background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.16));
+  border-color: var(--dsw-alias-brand-primary, #3d7eff);
 }
 
 .item:hover {

@@ -750,25 +750,27 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  align-items: stretch;
 }
 
 .skillRow {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   font-size: 12px;
   padding: 6px 8px;
   border-radius: 6px;
-  background: var(--dsw-alias-fill-tertiary);
-  border: 1px solid transparent;
+  background: transparent;
+  border: none;
   color: inherit;
   cursor: pointer;
   width: 100%;
   font: inherit;
+  text-align: right;
 }
 
 .skillRow:hover {
-  border-color: var(--dsw-alias-brand-primary, #3d7eff);
   background: var(--dsw-alias-bg-layer-2);
 }
 

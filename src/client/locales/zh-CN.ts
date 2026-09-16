@@ -190,6 +190,7 @@ export const zh = {
   'coach.context.drawerDelegations': '委派指令 · {n}',
   'coach.context.drawerInject': '注入文件 · {n}',
   'coach.context.drawer.user': '用户输入',
+  'coach.context.drawerCount': '共 {n} 条',
   'coach.context.drawer.plugin': '系统注入',
   'coach.context.drawer.delegation': '委派指令',
   'coach.context.drawer.inject': '注入文件',

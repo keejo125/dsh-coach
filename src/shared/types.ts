@@ -560,8 +560,10 @@ export interface CoachContextProfile {
   processSegments: number
   /** v0.2c 下钻明细：用户输入摘要列表（clip 160）。 */
   userTexts: string[]
-  /** v0.2c 下钻明细：系统注入摘要列表（form/摘要，clip 160）。 */
+  /** v0.2c 下钻明细：系统注入摘要列表（form/摘要，clip 240）。 */
   pluginSummaries: string[]
+  /** v0.2c 下钻明细：委派指令文本列表（agent-instructions，clip 240）。 */
+  delegationTexts: string[]
   /** v0.2c 下钻明细：系统注入提取的唯一文件路径（尽力）。 */
   injectPaths: string[]
 }

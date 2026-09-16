@@ -82,6 +82,7 @@ export async function buildCoachReport(engine: AggregatorEngine, sessionId: stri
     processSegments: scan.context.processSegments,
     userTexts: scan.context.userTexts,
     pluginSummaries: scan.context.pluginSummaries,
+    delegationTexts: scan.context.delegationTexts,
     injectPaths: scan.context.injectPaths,
   }
 

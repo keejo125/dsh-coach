@@ -1,8 +1,8 @@
 /**
- * 数据明细抽屉（复盘点击「查看全部/查看明细/具体数字」下钻）：mask + 右侧面板 + 分区内容。
+ * 数据明细抽屉（复盘点击「查看全部/具体数字/子Agent/Skill」下钻）：mask + 右侧面板 + 分区内容。
  * 与文件抽屉（CoachDrawer）同视觉；支持两种可视化单元：
  *  - bars：条形进度（数值占比，如 Token 全量轮次）
- *  - items：文本条目，可带 tone 徽章（ok/error/warn）
+ *  - items：文本条目（带序号徽章、tone 徽章；可带 path 点击打开文件正文）
  */
 import { useEffect } from 'react'
 import { IconCloseOutline16 } from './icons/index.tsx'
@@ -12,6 +12,8 @@ import css from './CoachDetailDrawer.module.css'
 export interface CoachDetailItem {
   text: string
   tone?: 'ok' | 'error' | 'warn'
+  /** 工作区相对路径：存在时条目可点击打开文件正文（浮层文件抽屉）。 */
+  path?: string
 }
 
 export interface CoachDetailBar {
@@ -33,6 +35,8 @@ export interface CoachDetailDrawerProps {
   sections: readonly CoachDetailSection[]
   t: Translate
   onClose: () => void
+  /** 条目 path 点击回调（打开文件正文抽屉）。 */
+  onSelectItem?: (path: string) => void
 }
 
 function toneClass(tone: CoachDetailItem['tone']): string {
@@ -44,7 +48,7 @@ function toneClass(tone: CoachDetailItem['tone']): string {
   }
 }
 
-export function CoachDetailDrawer({ title, sections, t, onClose }: CoachDetailDrawerProps): JSX.Element {
+export function CoachDetailDrawer({ title, sections, t, onClose, onSelectItem }: CoachDetailDrawerProps): JSX.Element {
   // Esc 关闭
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -93,9 +97,28 @@ export function CoachDetailDrawer({ title, sections, t, onClose }: CoachDetailDr
                 ) : (
                   (section.items ?? []).map((item, index) => {
                     const entry = typeof item === 'string' ? { text: item } as CoachDetailItem : item
-                    return (
-                      <div key={index} className={`${css.item} ${toneClass(entry.tone)}`} title={entry.text}>{entry.text}</div>
+                    const clickable = entry.path !== undefined && onSelectItem !== undefined
+                    const content = (
+                      <>
+                        <span className={css.itemIndex}>{index + 1}</span>
+                        <span className={css.itemText}>{entry.text}</span>
+                      </>
                     )
+                    return clickable
+                      ? (
+                        <button
+                          key={index}
+                          type="button"
+                          className={`${css.item} ${toneClass(entry.tone)} ${css.itemClickable}`}
+                          title={entry.text}
+                          onClick={() => { onSelectItem(entry.path as string) }}
+                        >
+                          {content}
+                        </button>
+                      )
+                      : (
+                        <div key={index} className={`${css.item} ${toneClass(entry.tone)}`} title={entry.text}>{content}</div>
+                      )
                   })
                 )}
               </section>

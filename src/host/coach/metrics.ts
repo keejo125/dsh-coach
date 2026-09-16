@@ -19,10 +19,18 @@ import type { AggregatorEvent } from '../aggregator.ts'
 
 /** Token 分布小标题：单行截断 32 字符。 */
 const TURN_TEXT_LIMIT = 32
+/** 抽屉下钻明细的摘要长度（比轮次标签长得多，避免「展示不全」）。 */
+const DETAIL_TEXT_LIMIT = 240
 
 function clipTokenTurnText(text: string): string {
   const oneLine = text.replace(/\s+/g, ' ').trim()
   return oneLine.length > TURN_TEXT_LIMIT ? `${oneLine.slice(0, TURN_TEXT_LIMIT - 1)}…` : oneLine
+}
+
+/** 抽屉明细摘要：压平换行 + 240 字符截断。 */
+function clipDetailText(text: string): string {
+  const oneLine = text.replace(/\s+/g, ' ').trim()
+  return oneLine.length > DETAIL_TEXT_LIMIT ? `${oneLine.slice(0, DETAIL_TEXT_LIMIT - 1)}…` : oneLine
 }
 
 /** 扫描结果：规模/信号/产物 + completion 维度所需的「最后一个非空答复」观测。 */
@@ -56,7 +64,7 @@ export interface CoachScan {
   /** Skill 调用统计（tool/call name='skill' 聚合）。 */
   skills: CoachSkillStats[]
   /** 上下文构成计数 + v0.2c 下钻明细（轻量投影，不做预算截断判定）。 */
-  context: Pick<CoachContextProfile, 'userItems' | 'pluginItems' | 'injectFiles' | 'finalSegments' | 'processSegments' | 'userTexts' | 'pluginSummaries' | 'injectPaths'>
+  context: Pick<CoachContextProfile, 'userItems' | 'pluginItems' | 'injectFiles' | 'finalSegments' | 'processSegments' | 'userTexts' | 'pluginSummaries' | 'delegationTexts' | 'injectPaths'>
 }
 
 interface CoachCall {
@@ -210,6 +218,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   // v0.2c 下钻明细收集
   const userTexts: string[] = []
   const pluginSummaries: string[] = []
+  const delegationTexts: string[] = []
   const injectPaths = new Set<string>()
 
   /** 把一次成功的工具结果归入参考（read 族）或产物（write/edit 族）。 */
@@ -283,7 +292,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
           if (text.length > 0 && !turnTextByTurn.has(turn)) {
             turnTextByTurn.set(turn, clipTokenTurnText(text))
           }
-          if (text.length > 0) userTexts.push(clipTokenTurnText(text))
+          if (text.length > 0) userTexts.push(clipDetailText(text))
         } else if (sourceKind === 'plugin') {
           contextPluginItems += 1
           // 注入文件计数：复用聚合器的注入路径提取口径（snapshot/notice 摘要）
@@ -306,10 +315,11 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
             injectFiles += new Set(paths).size
             paths.forEach(path => injectPaths.add(path))
           }
-          pluginSummaries.push(clipTokenTurnText(texts.filter(t => t.length > 0).join(' ') || form || ''))
+          pluginSummaries.push(clipDetailText(texts.filter(t => t.length > 0).join(' ') || form || ''))
         } else if (sourceKind === 'agent-instructions') {
           const text = extractText(data?.['content']).trim()
           profileChars.system += text.length
+          if (text.length > 0) delegationTexts.push(clipDetailText(text))
         }
       }
     } else if (type === 'request/header') {
@@ -503,6 +513,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
       processSegments: Math.max(0, nonEmptyTexts - finalSegments),
       userTexts,
       pluginSummaries,
+      delegationTexts,
       injectPaths: [...injectPaths],
     },
   }
