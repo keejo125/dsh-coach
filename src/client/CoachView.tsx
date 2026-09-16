@@ -271,10 +271,10 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         <button className={css.refresh} onClick={load}>{t('action.refresh')}</button>
       </div>
 
-      {/* 顶部总览带：左=评分总览（总分/六维条/雷达三段），右=本场统计 12 项 */}
-      <div className={css.topOverview}>
-        <section className={css.card} id="coach-radar-card">
-          <div className={css.scoreOverview}>
+      {/* 顶部总览大卡：三栏均分（两竖线）—— 总评分+雷达 | 六维条 | 本场统计 */}
+      <section className={css.card} id="coach-radar-card">
+        <div className={css.topOverview3}>
+          <div className={css.topCol}>
             <div className={css.scoreLeft}>
               <div className={css.cardTitle}>{t('coach.score.title')}</div>
               <div className={css.scoreBig}>{report.score.total}</div>
@@ -294,6 +294,13 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 </>
               )}
             </div>
+            <div className={css.topRadar}>
+              <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
+              <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
+            </div>
+          </div>
+          <div className={css.topCol}>
+            <div className={css.colTitle}>{t('coach.dims.title')}</div>
             <div className={css.scoreBars}>
               {report.score.dimensions
                 .slice()
@@ -317,36 +324,29 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   </button>
                 ))}
             </div>
-            <div className={css.scoreRight}>
-              <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
-              <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
-              <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
+          </div>
+          <div className={css.topCol}>
+            <CardHead
+              title={t('coach.stats.title')}
+              sub={t('coach.stats.subAll')}
+            />
+            <div className={css.stats}>
+              <Stat label={t('coach.stats.interactions')} value={scope.userTurns} onClick={() => scrollToCard('coach-timeline-card')} />
+              <Stat label={t('coach.stats.followUps')} value={signals.followUps} onClick={() => scrollToCard('coach-timeline-card')} />
+              <Stat label={t('coach.stats.interventions')} value={signals.interventions} onClick={() => scrollToCard('coach-timeline-card')} />
+              <Stat label={t('coach.stats.corrections')} value={signals.correctionTurns} onClick={() => scrollToCard('coach-timeline-card')} />
+              <Stat label={t('coach.stats.toolCalls')} value={scope.toolCalls} onClick={() => scrollToCard('coach-timeline-card')} />
+              <Stat label={t('coach.stats.failures')} value={scope.failedToolCalls} danger={scope.failedToolCalls > 0} onClick={() => scrollToCard('coach-timeline-card')} />
+              <Stat label={t('coach.stats.compactions')} value={signals.compactions} onClick={() => scrollToCard('coach-timeline-card')} />
+              <Stat label={t('coach.stats.delegations')} value={report.agents.length} onClick={() => scrollToCard('coach-agents-card')} />
+              <Stat label={t('coach.stats.skills')} value={skillCalls} danger={skillFailed > 0} onClick={() => scrollToCard('coach-skills-card')} />
+              <Stat label={t('coach.stats.tokenTotal')} value={report.token !== null ? report.token.total : 0} onClick={() => setDetail({ kind: 'token' })} />
+              <Stat label={t('coach.stats.refFiles')} value={report.references.totalFiles} onClick={() => scrollToCard('coach-refs-card')} />
+              <Stat label={t('coach.stats.artifacts')} value={report.artifacts.writtenFiles} onClick={() => scrollToCard('coach-artifacts-card')} />
             </div>
           </div>
-        </section>
-
-        {/* 本场统计（右上：全局 12 项汇总，3×4 数字格） */}
-        <section className={css.card}>
-          <CardHead
-            title={t('coach.stats.title')}
-            sub={t('coach.stats.subAll')}
-          />
-          <div className={css.stats}>
-            <Stat label={t('coach.stats.interactions')} value={scope.userTurns} onClick={() => setDetail({ kind: 'timeline' })} />
-            <Stat label={t('coach.stats.followUps')} value={signals.followUps} onClick={() => setDetail({ kind: 'timeline' })} />
-            <Stat label={t('coach.stats.interventions')} value={signals.interventions} onClick={() => setDetail({ kind: 'timeline' })} />
-            <Stat label={t('coach.stats.corrections')} value={signals.correctionTurns} onClick={() => setDetail({ kind: 'timeline' })} />
-            <Stat label={t('coach.stats.toolCalls')} value={scope.toolCalls} onClick={() => setDetail({ kind: 'timeline' })} />
-            <Stat label={t('coach.stats.failures')} value={scope.failedToolCalls} danger={scope.failedToolCalls > 0} onClick={() => setDetail({ kind: 'timeline' })} />
-            <Stat label={t('coach.stats.compactions')} value={signals.compactions} onClick={() => setDetail({ kind: 'timeline' })} />
-            <Stat label={t('coach.stats.delegations')} value={report.agents.length} onClick={() => scrollToCard('coach-agents-card')} />
-            <Stat label={t('coach.stats.skills')} value={skillCalls} danger={skillFailed > 0} onClick={() => scrollToCard('coach-skills-card')} />
-            <Stat label={t('coach.stats.tokenTotal')} value={report.token !== null ? report.token.total : 0} onClick={() => setDetail({ kind: 'token' })} />
-            <Stat label={t('coach.stats.refFiles')} value={report.references.totalFiles} onClick={() => scrollToCard('coach-refs-card')} />
-            <Stat label={t('coach.stats.artifacts')} value={report.artifacts.writtenFiles} onClick={() => scrollToCard('coach-artifacts-card')} />
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
       {/* Token 分布 + 上下文构成（资源使用） */}
       <div className={css.grid2}>
@@ -477,36 +477,6 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         )}
       </div>
 
-      {/* 时间线（摘要 + 右侧抽屉全量） */}
-      <section className={css.card}>
-        <CardHead
-          title={t('coach.timeline.title')}
-          sub={timeline !== null ? t('coach.timeline.sub', { n: timeline.rounds.length }) : t('coach.timeline.expandHint')}
-        />
-        {timeline === null || timeline.rounds.length === 0
-          ? <div className={css.muted}>{t('coach.timeline.noRounds')}</div>
-          : (
-            <>
-              {timeline.rounds.slice(0, 3).map((round, index) => (
-                <div key={index} className={css.roundHead}>
-                  <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
-                    {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
-                  </span>
-                  <span className={css.roundText}>{round.userText}</span>
-                  {round.signals.intervention && <span className={css.tagWarn}>{t('coach.timeline.intervention')}</span>}
-                  {round.signals.correction && <span className={css.tagError}>{t('coach.timeline.correction')}</span>}
-                  {round.artifacts.length > 0 && (
-                    <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
-                  )}
-                </div>
-              ))}
-              <button className={css.turnToggle} onClick={() => setDetail({ kind: 'timeline' })}>
-                {t('coach.timeline.viewAll', { n: timeline.rounds.length })} →
-              </button>
-            </>
-          )}
-      </section>
-
       {/* 引用分析 + 产物清单（文件侧：读的引用 vs 写的产物） */}
       <div className={css.grid2}>
         <section className={css.card} id="coach-refs-card">
@@ -580,14 +550,53 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       {drawerPath !== null ? (
         <CoachDrawer sessionId={sessionId} path={drawerPath} t={t} onClose={() => { setDrawerPath(null) }} />
       ) : null}
+      {/* 交互时间线（页面最底部：全量列出，点击某轮 → 右侧抽屉展示详情） */}
+      <section className={css.card} id="coach-timeline-card">
+        <CardHead
+          title={t('coach.timeline.title')}
+          sub={timeline !== null ? t('coach.timeline.sub', { n: timeline.rounds.length }) : t('coach.timeline.expandHint')}
+        />
+        {timeline === null || timeline.rounds.length === 0
+          ? <div className={css.muted}>{t('coach.timeline.noRounds')}</div>
+          : (
+            <div className={css.timelineFull}>
+              {timeline.rounds.map((round, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className={css.roundRow}
+                  onClick={() => setDetail({ kind: 'timelineTurn', index })}
+                  title={t('coach.timeline.openTurn')}
+                >
+                  <span className={css.roundNo}>{round.kind === 'initial' ? '★' : `R${index + 1}`}</span>
+                  <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
+                    {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
+                  </span>
+                  <span className={css.roundText}>{round.userText}</span>
+                  {round.signals.intervention && <span className={css.tagWarn}>{t('coach.timeline.intervention')}</span>}
+                  {round.signals.correction && <span className={css.tagError}>{t('coach.timeline.correction')}</span>}
+                  {round.references.length > 0 && (
+                    <span className={css.tagRef}>{t('coach.timeline.refs', { n: round.references.length })}</span>
+                  )}
+                  {round.artifacts.length > 0 && (
+                    <span className={css.tagOk}>{t('coach.timeline.artifact')} {round.artifacts.length}</span>
+                  )}
+                  <span className={css.roundArrow}>{'›'}</span>
+                </button>
+              ))}
+            </div>
+          )}
+      </section>
+
       {detail !== null && report !== null ? (
-        detail.kind === 'timeline'
+        detail.kind === 'timeline' || detail.kind === 'timelineTurn'
           ? (
             <TimelineDrawer
               rounds={timeline?.rounds ?? []}
               t={t}
               onSelectFile={openFile}
               onClose={() => { setDetail(null) }}
+              {...(detail.kind === 'timelineTurn' ? { focusIndex: detail.index } : {})}
             />
           )
           : (
@@ -612,6 +621,7 @@ type CoachDetail =
   | { kind: 'agent'; sessionId: string }
   | { kind: 'skill'; name: string }
   | { kind: 'timeline' }
+  | { kind: 'timelineTurn'; index: number }
 
 function detailDrawerTitle(detail: CoachDetail, report: CoachReport, t: Translate): string {
   switch (detail.kind) {
@@ -624,6 +634,7 @@ function detailDrawerTitle(detail: CoachDetail, report: CoachReport, t: Translat
     }
     case 'skill': return t('coach.skills.drawerTitle', { name: detail.name })
     case 'timeline': return t('coach.timeline.drawerTitle')
+    case 'timelineTurn': return t('coach.timeline.turnTitle', { n: detail.index + 1 })
   }
 }
 
@@ -638,6 +649,9 @@ function detailDrawerSections(
     case 'token': return tokenDrawerSections(t, report)
     case 'context': return contextTargetSections(detail.target, report, t)
     case 'contextAll': return contextTargetSections('all', report, t)
+    case 'timeline':
+    case 'timelineTurn':
+      return []
     case 'agent': {
       const agent = report.agents.find(candidate => candidate.sessionId === detail.sessionId)
       if (agent === undefined) return []
@@ -780,18 +794,25 @@ function TimelineDrawer({
   t,
   onSelectFile,
   onClose,
+  focusIndex,
 }: {
   rounds: readonly CoachTimelineRound[]
   t: Translate
   onSelectFile: (path: string) => void
   onClose: () => void
+  focusIndex?: number
 }): JSX.Element {
+  const focused = focusIndex === undefined || focusIndex < 0 || focusIndex >= rounds.length ? null : rounds[focusIndex]!
   return (
     <div className={detailCss.mask} onClick={onClose}>
       <div className={detailCss.panel} onClick={event => event.stopPropagation()}>
         <div className={detailCss.header}>
           <div className={detailCss.headerMain}>
-            <span className={detailCss.title}>{t('coach.timeline.drawerTitle', { n: rounds.length })}</span>
+            <span className={detailCss.title}>
+              {focused !== null
+                ? t('coach.timeline.turnTitle', { n: focusIndex! + 1 })
+                : t('coach.timeline.drawerTitle', { n: rounds.length })}
+            </span>
           </div>
           <button className={detailCss.iconButton} onClick={onClose} aria-label={t('coach.drawer.close')}>
             <IconCloseOutline16 />
@@ -800,7 +821,9 @@ function TimelineDrawer({
         <div className={detailCss.body}>
           {rounds.length === 0
             ? <div className={detailCss.hint}>{t('coach.timeline.noRounds')}</div>
-            : rounds.map((round, index) => (
+            : focused !== null
+              ? <RoundDetail round={focused} t={t} onSelectFile={onSelectFile} />
+              : rounds.map((round, index) => (
               <details key={index} className={css.round}>
                 <summary className={css.roundHead}>
                   <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
