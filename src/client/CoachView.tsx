@@ -10,7 +10,14 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachTimeline, CoachTimelineRound, FileTreeNode } from '../shared/types.ts'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import { CoachApiError, fetchCoachReport, fetchCoachTimeline } from './coach-client.ts'
+import {
+  acceptCoachSuggestion,
+  CoachApiError,
+  fetchCoachReport,
+  fetchCoachSuggestions,
+  fetchCoachTimeline,
+} from './coach-client.ts'
+import type { CoachSuggestions, CoachSuggestionKind } from '../shared/types.ts'
 import { CoachDrawer } from './CoachDrawer.tsx'
 import { CoachDetailDrawer, type CoachDetailSection } from './CoachDetailDrawer.tsx'
 import { FileTree } from './components/FileTree.tsx'
@@ -197,6 +204,9 @@ function CardHead({ title, sub }: { title: string; sub?: string | undefined }): 
 export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [report, setReport] = useState<CoachReport | null>(null)
   const [timeline, setTimeline] = useState<CoachTimeline | null>(null)
+  const [suggestions, setSuggestions] = useState<CoachSuggestions | null>(null)
+  const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set())
+  const [acceptingId, setAcceptingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
@@ -209,6 +219,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
     void Promise.all([
       fetchCoachReport(sessionId).then(setReport),
       fetchCoachTimeline(sessionId).then(setTimeline),
+      fetchCoachSuggestions(sessionId).then(setSuggestions).catch(() => { setSuggestions(null) }),
     ]).catch((err: unknown) => {
       setError(err instanceof CoachApiError ? err.message : t('coach.state.error'))
     }).finally(() => setLoading(false))
@@ -216,6 +227,28 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
 
   /** 点击参考/产物文件 → 右侧抽屉打开正文。 */
   const openFile = (path: string): void => { setDrawerPath(path) }
+
+  /** P3：采纳建议 → 写入目标 AGENTS.md，成功后本地标记（刷新重置，v1）。 */
+  const acceptSuggestion = (suggestionId: string): void => {
+    if (acceptingId !== null) return
+    setAcceptingId(suggestionId)
+    void acceptCoachSuggestion(sessionId, suggestionId)
+      .then(result => {
+        if (result.ok) {
+          setAcceptedIds(previous => {
+            const next = new Set(previous)
+            next.add(suggestionId)
+            return next
+          })
+        } else {
+          setError(result.message)
+        }
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof CoachApiError ? err.message : t('coach.state.error'))
+      })
+      .finally(() => setAcceptingId(null))
+  }
 
   /** 短板定位：点击六维条/副标题 → 滚动到总览卡并高亮对应雷达顶点。 */
   const jumpToDimension = (id: string): void => {
@@ -557,6 +590,65 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           )}
       </section>
 
+      {/* P3 复盘建议（知识/规则/偏好提炼，可采纳写入 AGENTS.md） */}
+      <section className={css.card} id="coach-suggestions-card">
+        <CardHead
+          title={t('coach.suggestions.title')}
+          sub={t('coach.suggestions.sub')}
+        />
+        {suggestions !== null && suggestions.targets.length > 0 && (
+          <div className={css.memTargets}>
+            {suggestions.targets.map(target => (
+              <span key={target.path} className={target.exists ? css.memTarget : css.memTargetNew}>
+                {target.kind === 'global' ? t('coach.suggestions.global') : t('coach.suggestions.workspace')}
+                {' · '}
+                <code>{target.path}</code>
+                {target.exists ? ` ✓ ${t('coach.suggestions.exists')}` : ` · ${t('coach.suggestions.willCreate')}`}
+              </span>
+            ))}
+          </div>
+        )}
+        {suggestions === null
+          ? <div className={css.muted}>{t('coach.suggestions.unavailable')}</div>
+          : suggestions.items.length === 0
+            ? <div className={css.muted}>{t('coach.suggestions.empty')}</div>
+            : (
+              <div className={css.suggestList}>
+                {suggestions.items.map(suggestion => {
+                  const accepted = acceptedIds.has(suggestion.id)
+                  return (
+                    <div key={suggestion.id} className={css.suggestRow}>
+                      <span className={suggestKindClass(suggestion.kind, css)}>
+                        {suggestKindLabel(suggestion.kind, t)}
+                      </span>
+                      <div className={css.suggestMain}>
+                        <div className={css.suggestTitle}>{suggestion.title}</div>
+                        <div className={css.suggestContent}>{suggestion.content}</div>
+                        <div className={css.suggestBasis}>
+                          {t('coach.suggestions.basis')} {suggestion.basis}
+                          {' · '}
+                          <code>{suggestion.target.path}</code>
+                        </div>
+                      </div>
+                      {accepted
+                        ? <span className={css.tagOk}>{t('coach.suggestions.accepted')} ✓</span>
+                        : (
+                          <button
+                            type="button"
+                            className={css.suggestAccept}
+                            onClick={() => acceptSuggestion(suggestion.id)}
+                            disabled={acceptingId !== null}
+                          >
+                            {acceptingId === suggestion.id ? t('coach.suggestions.accepting') : t('coach.suggestions.accept')}
+                          </button>
+                        )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+      </section>
+
       {detail !== null && report !== null ? (
         detail.kind === 'timeline' || detail.kind === 'timelineTurn'
           ? (
@@ -754,6 +846,24 @@ function contextTargetSections(
     case 'final': return [counted]
     case 'all':
       return [user, plugin, delegation, inject].filter(section => (section.items?.length ?? 0) > 0)
+  }
+}
+
+/** P3 建议类型徽章类名。 */
+function suggestKindClass(kind: CoachSuggestionKind, css: Record<string, string>): string {
+  switch (kind) {
+    case 'preference': return css.suggestKindPreference ?? ''
+    case 'rule': return css.suggestKindRule ?? ''
+    case 'knowledge': return css.suggestKindKnowledge ?? ''
+  }
+}
+
+/** P3 建议类型双语标签。 */
+function suggestKindLabel(kind: CoachSuggestionKind, t: Translate): string {
+  switch (kind) {
+    case 'preference': return t('coach.suggestions.kind.preference')
+    case 'rule': return t('coach.suggestions.kind.rule')
+    case 'knowledge': return t('coach.suggestions.kind.knowledge')
   }
 }
 

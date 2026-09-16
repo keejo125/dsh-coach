@@ -17,6 +17,7 @@ import type { AggregatorEngine } from '../aggregator.ts'
 import { buildCoachReport, CoachSessionUnavailableError } from './report.ts'
 import { buildCoachTimeline } from './timeline.ts'
 import { CoachFileAccessError, readCoachWorkspaceFile } from './file-access.ts'
+import { acceptCoachSuggestion, buildCoachSuggestions } from './suggestions.ts'
 
 const COACH_API_PREFIX = '/coach/api'
 
@@ -51,12 +52,15 @@ export async function dispatchCoachApi(
   query: URLSearchParams = new URLSearchParams(),
 ): Promise<DispatchResponse> {
   try {
-    if (method !== 'GET') return fail('COACH_BAD_REQUEST', `method ${method} is not supported`)
     const segments = pathname.split('/').filter(segment => segment.length > 0)
     if (segments[0] !== 'session' || segments.length !== 3) {
       return fail('COACH_BAD_REQUEST', 'unknown route')
     }
     const sessionId = segments[1] as string
+    const isAcceptRoute = segments[2] === 'suggestions-accept'
+    if (isAcceptRoute ? method !== 'POST' : method !== 'GET') {
+      return fail('COACH_BAD_REQUEST', `method ${method} is not supported`)
+    }
     if (segments[2] === 'report') {
       const report = await buildCoachReport(engine, sessionId)
       return ok(report)
@@ -74,6 +78,18 @@ export async function dispatchCoachApi(
       }
       const file = await readCoachWorkspaceFile(cwd, rawPath)
       return ok(file)
+    }
+    if (segments[2] === 'suggestions') {
+      const suggestions = await buildCoachSuggestions(engine, sessionId)
+      return ok(suggestions)
+    }
+    if (segments[2] === 'suggestions-accept') {
+      const suggestionId = query.get('id') ?? ''
+      if (suggestionId.length === 0) {
+        return fail('COACH_BAD_REQUEST', 'suggestion id is required')
+      }
+      const result = await acceptCoachSuggestion(engine, sessionId, suggestionId)
+      return ok(result)
     }
     return fail('COACH_BAD_REQUEST', 'unknown route')
   } catch (error) {

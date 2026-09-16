@@ -569,6 +569,56 @@ export interface CoachContextProfile {
 }
 
 /** 交互时间线：GET /coach/api/session/:id/timeline 的 data。 */
+/** P3 建议类型：偏好（用户习惯）/ 规则（操作约定）/ 知识（产物与关键文件）。 */
+export type CoachSuggestionKind = 'preference' | 'rule' | 'knowledge'
+
+/** 记忆/规约落点（AGENTS.md 体系：用户全局 ~/.dsh/AGENTS.md 与工作区 AGENTS.md/CLAUDE.md）。 */
+export interface CoachMemoryTarget {
+  /** 落点类别。 */
+  kind: 'global' | 'workspace'
+  /** 文件绝对路径。 */
+  path: string
+  /** 当前是否已存在。 */
+  exists: boolean
+}
+
+/** 单条复盘建议（host 确定性启发式提炼，无 LLM 依赖）。 */
+export interface CoachSuggestion {
+  /** 稳定 id（kind + 序号）。 */
+  id: string
+  kind: CoachSuggestionKind
+  /** 一句话标题。 */
+  title: string
+  /** 建议正文（采纳后写入落点的内容）。 */
+  content: string
+  /** 依据：来源轮次 / 文件，人类可读。 */
+  basis: string
+  /** 建议写入的落点。 */
+  target: CoachMemoryTarget
+}
+
+/** GET /coach/api/session/:id/suggestions 的 data。 */
+export interface CoachSuggestions {
+  sessionId: string
+  /** 生成时间戳（epoch ms）。 */
+  generatedAt: number
+  /** 检测到的记忆/规约落点（AGENTS.md 体系）。 */
+  targets: CoachMemoryTarget[]
+  items: CoachSuggestion[]
+}
+
+/** POST /coach/api/session/:id/suggestions/accept 的 data。 */
+export interface CoachAcceptResult {
+  suggestionId: string
+  ok: boolean
+  /** 实际写入的绝对路径。 */
+  path: string
+  /** 是否新建了文件。 */
+  created: boolean
+  /** 人类可读结果说明。 */
+  message: string
+}
+
 export interface CoachTimeline {
   sessionId: string
   /** 生成时间戳（epoch ms）。 */

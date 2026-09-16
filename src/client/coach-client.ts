@@ -4,7 +4,7 @@
  * 显示空态，其余显示可重试错误条。
  */
 
-import type { CoachApiEnvelope, CoachApiErrorCode, CoachReport, CoachTimeline } from '../shared/types.ts'
+import type { CoachAcceptResult, CoachApiEnvelope, CoachApiErrorCode, CoachReport, CoachSuggestions, CoachTimeline } from '../shared/types.ts'
 
 /** 归一化的 API 错误。 */
 export class CoachApiError extends Error {
@@ -60,4 +60,23 @@ export interface CoachFileContent {
 /** 拉取文件正文（GET /coach/api/session/:id/file?path=…）。 */
 export function fetchCoachFile(sessionId: string, path: string, signal?: AbortSignal): Promise<CoachFileContent> {
   return request<CoachFileContent>(`/coach/api/session/${encoded(sessionId)}/file?path=${encodeURIComponent(path)}`, signal)
+}
+
+/** 拉取复盘建议（GET /coach/api/session/:id/suggestions，P3）。 */
+export function fetchCoachSuggestions(sessionId: string, signal?: AbortSignal): Promise<CoachSuggestions> {
+  return request<CoachSuggestions>(`/coach/api/session/${encoded(sessionId)}/suggestions`, signal)
+}
+
+/** 采纳建议：写入目标 AGENTS.md（POST /coach/api/session/:id/suggestions-accept?id=…，P3）。 */
+export async function acceptCoachSuggestion(sessionId: string, suggestionId: string): Promise<CoachAcceptResult> {
+  const response = await fetch(`/coach/api/session/${encoded(sessionId)}/suggestions-accept?id=${encodeURIComponent(suggestionId)}`, { method: 'POST' })
+  let payload: CoachApiEnvelope<CoachAcceptResult> | undefined
+  try {
+    payload = await response.json() as CoachApiEnvelope<CoachAcceptResult>
+  } catch {
+    throw new CoachApiError('COACH_INTERNAL', `HTTP ${String(response.status)}`)
+  }
+  if (payload !== undefined && payload.ok === true) return payload.data
+  const errorBody = payload !== undefined && payload.ok === false ? payload.error : undefined
+  throw new CoachApiError(errorBody?.code ?? 'COACH_INTERNAL', errorBody?.message ?? `HTTP ${String(response.status)}`)
 }
