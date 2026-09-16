@@ -176,6 +176,8 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.skills.calls': 'calls',
   'coach.skills.failed': 'failed',
   'coach.skills.none': 'No skill invoked in this session',
+  'coach.skills.recent': 'Recent calls',
+  'coach.skills.recentEmpty': 'No skill calls in this session',
   'coach.context.title': 'Context profile',
   'coach.context.sub': 'User {user} · Plugin {plugin} · Delegations {delegations} · Injected {inject}',
   'coach.context.userItems': 'User messages',

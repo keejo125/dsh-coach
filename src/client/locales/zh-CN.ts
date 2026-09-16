@@ -177,6 +177,8 @@ export const zh = {
   'coach.skills.calls': '调用',
   'coach.skills.failed': '失败',
   'coach.skills.none': '本次未调用 Skill',
+  'coach.skills.recent': '最近调用',
+  'coach.skills.recentEmpty': '本次暂无 Skill 调用记录',
   'coach.context.title': '上下文构成',
   'coach.context.sub': '用户提示 {user} · 系统注入 {plugin} · 委派 {delegations} · 注入文件 {inject}',
   'coach.context.userItems': '用户提示',

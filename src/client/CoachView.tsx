@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachTimeline, CoachTimelineRound, FileTreeNode } from '../shared/types.ts'
+import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachSkillStats, CoachTimeline, CoachTimelineRound, FileTreeNode } from '../shared/types.ts'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import {
@@ -401,20 +401,25 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 {/* 汇总：输入构成（上移，总分原则） */}
                 {renderTokenProfile(t, report.token.profile)}
                 <div className={css.turnList}>
-                  {report.token.perTurn
-                    .slice(0, 5)
-                    .map(turn => (
+                  {(() => {
+                    const turns = report.token.perTurn.slice(0, 5)
+                    const maxTurn = Math.max(1, ...turns.map(turn => turn.total))
+                    return turns.map(turn => (
                       <div key={turn.turn} className={css.turnRow}>
                         <span className={css.turnTag}>R{turn.turn}</span>
                         <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={turn.text}>
                           {turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}
                         </span>
                         <div className={css.barTrack}>
-                          <div className={`${css.barFill} ${css.barToken}`} style={{ width: `${Math.min(100, (turn.total / report.token!.total) * 100)}%` }} />
+                          <div
+                            className={`${css.barFill} ${css.barToken}`}
+                            style={{ width: `${Math.max(2, (turn.total / maxTurn) * 100)}%` }}
+                          />
                         </div>
-                        <span className={css.refViews}>{turn.total.toLocaleString()}</span>
+                        <span className={css.turnValue}>{turn.total.toLocaleString()}</span>
                       </div>
-                    ))}
+                    ))
+                  })()}
                   {report.token.perTurn.length > 5 && (
                     <button className={css.turnToggle} onClick={() => setDetail({ kind: 'token' })}>
                       {t('coach.token.viewAll', { n: report.token.perTurn.length })} →
@@ -516,6 +521,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 </button>
               ))}
             </div>
+            <SkillRecentCalls timeline={timeline} skills={report.skills} t={t} onOpen={name => setDetail({ kind: 'skill', name })} />
           </section>
         )}
       </div>
@@ -652,6 +658,42 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             />
           )
       ) : null}
+    </div>
+  )
+}
+
+/** Skill 卡最近调用：从时间线提取各 skill 最近 3 次调用（填充内容 + 可下钻）。 */
+function SkillRecentCalls({ timeline, skills, t, onOpen }: {
+  timeline: CoachTimeline | null
+  skills: readonly CoachSkillStats[]
+  t: Translate
+  onOpen: (name: string) => void
+}): JSX.Element | null {
+  const names = new Set(skills.map(skill => skill.name))
+  const calls = (timeline?.rounds ?? [])
+    .flatMap((round, index) =>
+      round.actions
+        .filter(action => names.has(action.name))
+        .map(action => ({ round: index + 1, name: action.name, path: action.path, failed: action.failed })))
+    .slice(-3)
+    .reverse()
+  return (
+    <div className={css.skillRecent}>
+      <div className={css.sectionLabel}>{t('coach.skills.recent')}</div>
+      {calls.length === 0
+        ? <div className={css.skillRecentEmpty}>{t('coach.skills.recentEmpty')}</div>
+        : (
+          <div className={css.skillRecentList}>
+            {calls.map((call, i) => (
+              <button key={i} type="button" className={css.skillRecentRow} onClick={() => onOpen(call.name)}>
+                <span className={css.skillRecentNo}>R{call.round}</span>
+                <span className={css.skillRecentName}>{call.name}</span>
+                <span className={css.skillRecentPath} title={call.path ?? undefined}>{call.path}</span>
+                {call.failed && <span className={css.tagError}>{t('coach.skills.failed')}</span>}
+              </button>
+            ))}
+          </div>
+        )}
     </div>
   )
 }
@@ -1006,6 +1048,19 @@ export function RoundDetail({ round, t, onSelectFile }: {
   )
 }
 
+/** 统计数字缩写：≥1M 用 M、≥10K 用 K（精确值放 title）。 */
+function fmtStatValue(value: number): string {
+  if (value >= 1_000_000) {
+    const m = value / 1_000_000
+    return `${m >= 10 ? Math.round(m) : m.toFixed(1)}M`
+  }
+  if (value >= 10_000) {
+    const k = value / 1_000
+    return `${k >= 10 ? Math.round(k) : k.toFixed(1)}K`
+  }
+  return String(value)
+}
+
 function Stat({ label, value, danger = false, onClick }: {
   label: string
   value: number
@@ -1017,9 +1072,10 @@ function Stat({ label, value, danger = false, onClick }: {
       className={css.stat}
       onClick={onClick}
       type="button"
+      title={value.toLocaleString()}
       {...(onClick !== undefined ? {} : { disabled: true })}
     >
-      <b className={danger ? css.danger : undefined}>{value}</b>
+      <b className={danger ? css.danger : undefined}>{fmtStatValue(value)}</b>
       <span>{label}</span>
     </button>
   )
