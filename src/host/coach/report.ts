@@ -80,6 +80,9 @@ export async function buildCoachReport(engine: AggregatorEngine, sessionId: stri
     totalViews: [...scan.refCounts.values()].reduce((sum, count) => sum + count, 0),
     finalSegments: scan.context.finalSegments,
     processSegments: scan.context.processSegments,
+    userTexts: scan.context.userTexts,
+    pluginSummaries: scan.context.pluginSummaries,
+    injectPaths: scan.context.injectPaths,
   }
 
   const report: CoachReport = {

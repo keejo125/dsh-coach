@@ -55,8 +55,8 @@ export interface CoachScan {
   token: CoachTokenStats | null
   /** Skill 调用统计（tool/call name='skill' 聚合）。 */
   skills: CoachSkillStats[]
-  /** 上下文构成计数（轻量投影，不做预算截断判定）。 */
-  context: Pick<CoachContextProfile, 'userItems' | 'pluginItems' | 'injectFiles' | 'finalSegments' | 'processSegments'>
+  /** 上下文构成计数 + v0.2c 下钻明细（轻量投影，不做预算截断判定）。 */
+  context: Pick<CoachContextProfile, 'userItems' | 'pluginItems' | 'injectFiles' | 'finalSegments' | 'processSegments' | 'userTexts' | 'pluginSummaries' | 'injectPaths'>
 }
 
 interface CoachCall {
@@ -207,6 +207,10 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   let contextPluginItems = 0
   let injectFiles = 0
   let nonEmptyTexts = 0
+  // v0.2c 下钻明细收集
+  const userTexts: string[] = []
+  const pluginSummaries: string[] = []
+  const injectPaths = new Set<string>()
 
   /** 把一次成功的工具结果归入参考（read 族）或产物（write/edit 族）。 */
   const classify = (call: CoachCall, data: Record<string, unknown>): void => {
@@ -279,6 +283,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
           if (text.length > 0 && !turnTextByTurn.has(turn)) {
             turnTextByTurn.set(turn, clipTokenTurnText(text))
           }
+          if (text.length > 0) userTexts.push(clipTokenTurnText(text))
         } else if (sourceKind === 'plugin') {
           contextPluginItems += 1
           // 注入文件计数：复用聚合器的注入路径提取口径（snapshot/notice 摘要）
@@ -297,7 +302,11 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
           }
           profileChars.plugin += texts.reduce((sum, item) => sum + item.length, 0)
           const paths = extractInjectFilePaths(form, texts)
-          if (paths.length > 0) injectFiles += new Set(paths).size
+          if (paths.length > 0) {
+            injectFiles += new Set(paths).size
+            paths.forEach(path => injectPaths.add(path))
+          }
+          pluginSummaries.push(clipTokenTurnText(texts.filter(t => t.length > 0).join(' ') || form || ''))
         } else if (sourceKind === 'agent-instructions') {
           const text = extractText(data?.['content']).trim()
           profileChars.system += text.length
@@ -492,6 +501,9 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
       injectFiles,
       finalSegments,
       processSegments: Math.max(0, nonEmptyTexts - finalSegments),
+      userTexts,
+      pluginSummaries,
+      injectPaths: [...injectPaths],
     },
   }
 }

@@ -124,6 +124,32 @@
 }
 
 /* —— 总分卡 —— */
+/* —— 评分总览（总分 + 雷达合一）—— */
+.scoreOverview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.scoreLeft {
+  flex: none;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6px 0;
+  border-right: 1px solid var(--dsw-alias-border-l2, rgba(127, 127, 127, 0.2));
+}
+
+.scoreRight {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .scoreBig {
   font-size: 44px;
   font-weight: 800;

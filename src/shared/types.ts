@@ -558,6 +558,12 @@ export interface CoachContextProfile {
   finalSegments: number
   /** 过程输出段数（非空 assistant 文本消息数，不含最终段）。 */
   processSegments: number
+  /** v0.2c 下钻明细：用户输入摘要列表（clip 160）。 */
+  userTexts: string[]
+  /** v0.2c 下钻明细：系统注入摘要列表（form/摘要，clip 160）。 */
+  pluginSummaries: string[]
+  /** v0.2c 下钻明细：系统注入提取的唯一文件路径（尽力）。 */
+  injectPaths: string[]
 }
 
 /** 交互时间线：GET /coach/api/session/:id/timeline 的 data。 */

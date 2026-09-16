@@ -12,6 +12,7 @@ import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/clie
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import { CoachApiError, fetchCoachReport, fetchCoachTimeline } from './coach-client.ts'
 import { CoachDrawer } from './CoachDrawer.tsx'
+import { CoachDetailDrawer, type CoachDetailSection } from './CoachDetailDrawer.tsx'
 import { FileTree } from './components/FileTree.tsx'
 import type { Translate } from './components/AgentBadge.tsx'
 import css from './CoachView.module.css'
@@ -194,7 +195,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
-  const [tokenExpanded, setTokenExpanded] = useState(false)
+  const [detailDrawer, setDetailDrawer] = useState<'token' | 'context' | null>(null)
   const [highlightDim, setHighlightDim] = useState<string | null>(null)
 
   const load = (): void => {
@@ -252,36 +253,35 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         <button className={css.refresh} onClick={load}>{t('action.refresh')}</button>
       </div>
 
-      {/* 总分 + 雷达（总览层） */}
-      <div className={css.grid2}>
-        <section className={css.card}>
-          <div className={css.cardHead}>
+      {/* 评分总览（总分 + 六维雷达合一：雷达即总分的可视化分解） */}
+      <section className={css.card} id="coach-radar-card">
+        <div className={css.scoreOverview}>
+          <div className={css.scoreLeft}>
             <div className={css.cardTitle}>{t('coach.score.title')}</div>
+            <div className={css.scoreBig}>{report.score.total}</div>
+            <span className={css.rating}>{t(`coach.score.rating.${rating}`)}</span>
             {lowest !== undefined && (
-              <button
-                className={css.cardSubLink}
-                onClick={() => jumpToDimension(lowest.id)}
-                title={t('coach.score.jumpHint')}
-              >
-                {t('coach.score.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score })} →
-              </button>
+              <>
+                <button
+                  className={css.cardSubLink}
+                  onClick={() => jumpToDimension(lowest.id)}
+                  title={t('coach.score.jumpHint')}
+                >
+                  {t('coach.score.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score })} →
+                </button>
+                <div className={css.hint}>
+                  {DIMENSION_LABELS[lowest.id] ?? lowest.id} {lowest.score} · {t('coach.score.noDetail')}
+                </div>
+              </>
             )}
           </div>
-          <div className={css.scoreBig}>{report.score.total}</div>
-          <span className={css.rating}>{t(`coach.score.rating.${rating}`)}</span>
-          {lowest !== undefined && (
-            <div className={css.hint}>
-              {DIMENSION_LABELS[lowest.id] ?? lowest.id} {lowest.score} · {t('coach.score.noDetail')}
-            </div>
-          )}
-        </section>
-
-        <section className={css.card} id="coach-radar-card">
-          <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
-          <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
-          <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
-        </section>
-      </div>
+          <div className={css.scoreRight}>
+            <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
+            <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
+            <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
+          </div>
+        </div>
+      </section>
 
       {/* 本场统计（全局汇总：下方各卡核心指标上聚，与明细一一对应） */}
       <section className={css.card}>
@@ -325,7 +325,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 {renderTokenProfile(t, report.token.profile)}
                 <div className={css.turnList}>
                   {report.token.perTurn
-                    .slice(0, tokenExpanded ? report.token.perTurn.length : 5)
+                    .slice(0, 5)
                     .map(turn => (
                       <div key={turn.turn} className={css.turnRow}>
                         <span className={css.turnTag}>R{turn.turn}</span>
@@ -339,10 +339,8 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                       </div>
                     ))}
                   {report.token.perTurn.length > 5 && (
-                    <button className={css.turnToggle} onClick={() => setTokenExpanded(v => !v)}>
-                      {tokenExpanded
-                        ? t('coach.token.collapse')
-                        : t('coach.token.expand', { n: report.token.perTurn.length })}
+                    <button className={css.turnToggle} onClick={() => setDetailDrawer('token')}>
+                      {t('coach.token.viewAll', { n: report.token.perTurn.length })} →
                     </button>
                   )}
                 </div>
@@ -372,6 +370,9 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 <ContextStat label={t('coach.context.processSegments')} value={report.contextProfile.processSegments} />
               </div>
             )}
+          <button className={css.turnToggle} onClick={() => setDetailDrawer('context')}>
+            {t('coach.context.viewDetail')} →
+          </button>
         </section>
       </div>
 
@@ -523,8 +524,71 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       {drawerPath !== null ? (
         <CoachDrawer sessionId={sessionId} path={drawerPath} t={t} onClose={() => { setDrawerPath(null) }} />
       ) : null}
+      {detailDrawer !== null && report !== null ? (
+        <CoachDetailDrawer
+          title={detailDrawer === 'token' ? t('coach.token.drawerTitle') : t('coach.context.drawerTitle')}
+          sections={detailDrawer === 'token' ? tokenDrawerSections(t, report) : contextDrawerSections(t, report)}
+          t={t}
+          onClose={() => { setDetailDrawer(null) }}
+        />
+      ) : null}
     </div>
   )
+}
+
+/** Token 抽屉：汇总（输入构成）+ 全量轮次。 */
+function tokenDrawerSections(t: Translate, report: CoachReport): CoachDetailSection[] {
+  const sections: CoachDetailSection[] = []
+  const profile = report.token?.profile
+  if (profile !== undefined) {
+    sections.push({
+      title: t('coach.token.profile.title'),
+      items: [
+        `${t('coach.token.profile.user')} ${profile.user.toLocaleString()}`,
+        `${t('coach.token.profile.tools')} ${profile.tools.toLocaleString()}`,
+        `${t('coach.token.profile.plugin')} ${profile.plugin.toLocaleString()}`,
+        `${t('coach.token.profile.system')} ${profile.system.toLocaleString()}`,
+      ],
+    })
+  }
+  if (report.token !== null) {
+    sections.push({
+      title: t('coach.token.allTurnsTitle', { n: report.token.perTurn.length }),
+      items: report.token.perTurn.map(turn => (
+        turn.text.length > 0
+          ? `R${turn.turn} · ${turn.text} · ${turn.total.toLocaleString()}`
+          : `R${turn.turn} · ${t('coach.token.toolTurn')} · ${turn.total.toLocaleString()}`
+      )),
+    })
+  }
+  return sections
+}
+
+/** 上下文抽屉：用户输入 / 系统注入 / 委派指令 / 注入文件。 */
+function contextDrawerSections(t: Translate, report: CoachReport): CoachDetailSection[] {
+  const profile = report.contextProfile
+  if (profile === null) return []
+  const sections: CoachDetailSection[] = [
+    {
+      title: t('coach.context.drawerUser', { n: profile.userItems }),
+      items: profile.userTexts.length > 0 ? profile.userTexts : [t('coach.drawer.noDetail')],
+    },
+    {
+      title: t('coach.context.drawerPlugin', { n: profile.pluginItems }),
+      items: profile.pluginSummaries.length > 0 ? profile.pluginSummaries : [t('coach.drawer.noDetail')],
+    },
+    {
+      title: t('coach.context.drawerDelegations', { n: report.agents.length }),
+      items: report.agents.length > 0
+        ? report.agents.map(agent => agent.task !== null ? agent.task : agent.label)
+        : [t('coach.drawer.noDetail')],
+    },
+    {
+      title: t('coach.context.drawerInject', { n: profile.injectPaths.length }),
+      items: profile.injectPaths.length > 0 ? profile.injectPaths : [t('coach.drawer.noDetail')],
+    },
+  ]
+  return sections.filter(section => section.items.length > 0)
 }
 
 /** 产物清单：计数行 + 文件树（dir 展开、file 带新建/更新徽标）。导出供 SSR 冒烟测试。 */
