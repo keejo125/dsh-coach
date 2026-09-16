@@ -293,13 +293,14 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   </div>
                 </>
               )}
+              <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
             </div>
+          </div>
+          <div className={css.topCol}>
             <div className={css.topRadar}>
               <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
               <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
             </div>
-          </div>
-          <div className={css.topCol}>
             <div className={css.colTitle}>{t('coach.dims.title')}</div>
             <div className={css.scoreBars}>
               {report.score.dimensions
