@@ -124,7 +124,23 @@ async function summarizeAgents(
     try {
       childLog = await engine.readSession(childId)
     } catch {
-      continue // 子会话不可读：跳过（增强信息，不阻断报告）
+      // C01：子会话日志不可读 → 灰行占位（保留派生态，各计数为 0，不静默丢弃）
+      summaries.push({
+        sessionId: childId,
+        label: labelOf(header.agentPreset),
+        task: null,
+        role: 'subagent',
+        userTurns: 0,
+        delegations: 0,
+        readFiles: 0,
+        toolCalls: 0,
+        failedToolCalls: 0,
+        writtenFiles: 0,
+        files: [],
+        hasFinalAnswer: false,
+        readable: false,
+      })
+      continue
     }
     const childScan = scanCoachEvents(childLog.events, childLog.session.cwd)
     summaries.push({
@@ -140,6 +156,7 @@ async function summarizeAgents(
       writtenFiles: childScan.artifacts.writtenFiles,
       files: childScan.artifacts.files,
       hasFinalAnswer: childScan.lastAssistantText !== undefined,
+      readable: true,
     })
   }
   return summaries

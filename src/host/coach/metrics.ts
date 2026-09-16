@@ -316,7 +316,8 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
             paths.forEach(path => injectPaths.add(path))
           }
           pluginSummaries.push(clipDetailText(texts.filter(t => t.length > 0).join(' ') || form || ''))
-        } else if (sourceKind === 'agent-instructions') {
+        } else if (sourceKind === 'agent-instructions' || sourceKind === 'team-message') {
+          // C02：委派文本同时采 agent-instructions 与 team-message（团队消息同为系统委派）
           const text = extractText(data?.['content']).trim()
           profileChars.system += text.length
           if (text.length > 0) delegationTexts.push(clipDetailText(text))

@@ -141,13 +141,15 @@ describe('report · 子智能体汇总', () => {
     expect(report.artifacts.updatedFiles).toBe(1) // opCount 2 ≥ 2 → 迭代信号
   })
 
-  it('子会话不可读时跳过（不阻断报告）', async () => {
+  it('子会话不可读时灰行占位（C01：不静默丢弃）', async () => {
     const engine = makeEngine(
       { main: { header: { id: 'main' }, events: makeEvents([userMsg('hi'), assistantMsg(1, 'ok')]) } },
       { main: ['missing-child'] },
     )
     const report = await buildCoachReport(engine, 'main')
-    expect(report.agents).toHaveLength(0)
+    expect(report.agents).toHaveLength(1)
+    expect(report.agents[0]?.readable).toBe(false)
+    expect(report.agents[0]?.sessionId).toBe('missing-child')
     expect(report.scope.delegations).toBe(1)
   })
 })

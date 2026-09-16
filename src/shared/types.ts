@@ -493,6 +493,8 @@ export interface CoachAgentSummary {
   files: CoachArtifactFile[]
   /** 是否有非空最终答复。 */
   hasFinalAnswer: boolean
+  /** 会话日志是否可读（C01：不可读时前端灰行占位，各计数为 0）。 */
+  readable: boolean
 }
 
 /** 文件引用统计（v0.2b）。 */

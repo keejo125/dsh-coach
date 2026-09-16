@@ -1,3 +1,56 @@
+.suggestToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.suggestToggleTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary, #1f2328);
+}
+
+.suggestCount {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.3));
+  border-radius: 999px;
+  padding: 0 9px;
+  line-height: 20px;
+}
+
+.suggestChevron {
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  transition: transform 0.18s ease;
+}
+
+.suggestChevronOpen {
+  transform: rotate(90deg);
+}
+
+.suggestBody {
+  margin-top: 10px;
+  border-top: 1px solid var(--dsw-alias-border-l2, rgba(127, 127, 127, 0.12));
+  padding-top: 10px;
+}
+
+.suggestSub {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, #4e5969);
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
 /* 复盘视图样式：全部颜色走 DSH 主题 token（--dsw-alias-*），随深/浅主题自动切换。
  * 层级约定：卡片=layer-1（相对 base 高一层）、内嵌次级块=layer-2、边框=border-l2/l3、
  * 主文字=label-primary（默认继承不设）、次级=label-secondary、三级=label-tertiary。 */
@@ -372,6 +425,33 @@
 .agentRow:hover {
   border-color: var(--dsw-alias-brand-primary, #3d7eff);
   background: var(--dsw-alias-bg-layer-2);
+}
+
+.agentRowUnreadable {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px dashed var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.35));
+  border-radius: 10px;
+  padding: 9px 11px;
+  margin-bottom: 8px;
+  background: var(--dsw-alias-bg-layer-0, rgba(127, 127, 127, 0.05));
+  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  cursor: default;
+  font: inherit;
+  opacity: 0.75;
+}
+
+.agentUnreadableTag {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.35));
+  border-radius: 999px;
+  padding: 0 8px;
+  line-height: 18px;
+  vertical-align: 1px;
 }
 
 .agentName {
@@ -1118,28 +1198,6 @@
   color: var(--dsw-alias-label-tertiary, #9aa4b2);
   margin-top: 4px;
   word-break: break-all;
-}
-
-.suggestAccept {
-  flex: none;
-  font-size: 12px;
-  color: var(--dsw-alias-brand-primary, #3d7eff);
-  background: var(--dsw-alias-bg-layer-2, rgba(127, 127, 127, 0.08));
-  border: 1px solid var(--dsw-alias-brand-primary, #3d7eff);
-  border-radius: 999px;
-  padding: 3px 12px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.suggestAccept:hover:not(:disabled) {
-  background: var(--dsw-alias-brand-primary, #3d7eff);
-  color: var(--dsw-alias-label-primary-inverted, #fff);
-}
-
-.suggestAccept:disabled {
-  opacity: 0.55;
-  cursor: default;
 }
 
 .suggestKindPreference {

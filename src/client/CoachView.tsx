@@ -11,7 +11,6 @@ import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachTimeline, Coa
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import {
-  acceptCoachSuggestion,
   CoachApiError,
   fetchCoachReport,
   fetchCoachSuggestions,
@@ -205,8 +204,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [report, setReport] = useState<CoachReport | null>(null)
   const [timeline, setTimeline] = useState<CoachTimeline | null>(null)
   const [suggestions, setSuggestions] = useState<CoachSuggestions | null>(null)
-  const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set())
-  const [acceptingId, setAcceptingId] = useState<string | null>(null)
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
@@ -227,28 +225,6 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
 
   /** 点击参考/产物文件 → 右侧抽屉打开正文。 */
   const openFile = (path: string): void => { setDrawerPath(path) }
-
-  /** P3：采纳建议 → 写入目标 AGENTS.md，成功后本地标记（刷新重置，v1）。 */
-  const acceptSuggestion = (suggestionId: string): void => {
-    if (acceptingId !== null) return
-    setAcceptingId(suggestionId)
-    void acceptCoachSuggestion(sessionId, suggestionId)
-      .then(result => {
-        if (result.ok) {
-          setAcceptedIds(previous => {
-            const next = new Set(previous)
-            next.add(suggestionId)
-            return next
-          })
-        } else {
-          setError(result.message)
-        }
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof CoachApiError ? err.message : t('coach.state.error'))
-      })
-      .finally(() => setAcceptingId(null))
-  }
 
   /** 短板定位：点击六维条/副标题 → 滚动到总览卡并高亮对应雷达顶点。 */
   const jumpToDimension = (id: string): void => {
@@ -350,6 +326,62 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         </div>
       </section>
 
+      {/* P3 复盘建议（知识/规则/偏好提炼；点击展开；采纳功能后续版本开放） */}
+      <section className={css.card} id="coach-suggestions-card">
+        <button
+          type="button"
+          className={css.suggestToggle}
+          onClick={() => setSuggestionsOpen(open => !open)}
+          aria-expanded={suggestionsOpen}
+        >
+          <span className={css.suggestToggleTitle}>{t('coach.suggestions.title')}</span>
+          {suggestions !== null && (
+            <span className={css.suggestCount}>{t('coach.suggestions.count', { n: suggestions.items.length })}</span>
+          )}
+          <span className={`${css.suggestChevron}${suggestionsOpen ? ` ${css.suggestChevronOpen}` : ''}`}>›</span>
+        </button>
+        {suggestionsOpen && (
+          <div className={css.suggestBody}>
+            <div className={css.suggestSub}>{t('coach.suggestions.sub')}</div>
+            {suggestions !== null && suggestions.targets.length > 0 && (
+              <div className={css.memTargets}>
+                {suggestions.targets.map(target => (
+                  <span key={target.path} className={target.exists ? css.memTarget : css.memTargetNew}>
+                    {target.kind === 'global' ? t('coach.suggestions.global') : t('coach.suggestions.workspace')}
+                    {' · '}
+                    <code>{target.path}</code>
+                    {target.exists ? ` ✓ ${t('coach.suggestions.exists')}` : ` · ${t('coach.suggestions.willCreate')}`}
+                  </span>
+                ))}
+              </div>
+            )}
+            {suggestions === null
+              ? <div className={css.muted}>{t('coach.suggestions.unavailable')}</div>
+              : suggestions.items.length === 0
+                ? <div className={css.muted}>{t('coach.suggestions.empty')}</div>
+                : (
+                  <div className={css.suggestList}>
+                    {suggestions.items.map(suggestion => (
+                      <div key={suggestion.id} className={css.suggestRow}>
+                        <span className={suggestKindClass(suggestion.kind, css)}>
+                          {suggestKindLabel(suggestion.kind, t)}
+                        </span>
+                        <div className={css.suggestMain}>
+                          <div className={css.suggestTitle}>{suggestion.title}</div>
+                          <div className={css.suggestContent}>{suggestion.content}</div>
+                          <div className={css.suggestBasis}>
+                            {t('coach.suggestions.basis')} {suggestion.basis}
+                            {' · '}
+                            <code>{suggestion.target.path}</code>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+          </div>
+        )}
+      </section>
       {/* Token 分布 + 上下文构成（资源使用） */}
       <div className={css.grid2}>
         <section className={css.card}>
@@ -393,6 +425,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             )}
         </section>
 
+
         <section className={css.card}>
           <CardHead
             title={t('coach.context.title')}
@@ -423,7 +456,9 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         <section className={css.card} id="coach-agents-card">
           <CardHead
             title={t('coach.agents.title')}
-            sub={report.agents.length > 0 ? t('coach.agents.sub', { n: report.agents.length }) : undefined}
+            sub={report.agents.length > 0
+              ? t('coach.agents.sub', { total: report.agents.length, readable: report.agents.filter(agent => agent.readable).length })
+              : undefined}
           />
           {report.agents.length === 0
             ? <div className={css.muted}>{t('coach.agents.empty')}</div>
@@ -432,22 +467,28 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 {report.agents.map(agent => (
                   <button
                     key={agent.sessionId}
-                    className={css.agentRow}
+                    className={agent.readable ? css.agentRow : css.agentRowUnreadable}
                     type="button"
-                    onClick={() => setDetail({ kind: 'agent', sessionId: agent.sessionId })}
-                    title={t('coach.agents.viewDetail')}
+                    onClick={agent.readable ? () => setDetail({ kind: 'agent', sessionId: agent.sessionId }) : undefined}
+                    title={agent.readable ? t('coach.agents.viewDetail') : t('coach.agents.unreadable')}
+                    disabled={!agent.readable}
                   >
                     <div className={css.agentName}>
                       {agent.label}
                       {agent.task !== null && (
                         <span className={css.agentTask} title={agent.task}>{agent.task}</span>
                       )}
+                      {!agent.readable && (
+                        <span className={css.agentUnreadableTag}>{t('coach.agents.unreadable')}</span>
+                      )}
                     </div>
-                    <div className={css.agentMeta}>
-                      {t('coach.agents.readFiles', { n: agent.readFiles })} · {t('coach.agents.toolCalls', { n: agent.toolCalls })}
-                      {' · '}{agent.failedToolCalls > 0 ? t('coach.agents.failures', { n: agent.failedToolCalls }) : t('coach.agents.hasFinal')}
-                      {' · '}{t('coach.agents.writtenFiles', { n: agent.writtenFiles })}
-                    </div>
+                    {agent.readable && (
+                      <div className={css.agentMeta}>
+                        {t('coach.agents.readFiles', { n: agent.readFiles })} · {t('coach.agents.toolCalls', { n: agent.toolCalls })}
+                        {' · '}{agent.failedToolCalls > 0 ? t('coach.agents.failures', { n: agent.failedToolCalls }) : t('coach.agents.hasFinal')}
+                        {' · '}{t('coach.agents.writtenFiles', { n: agent.writtenFiles })}
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -588,65 +629,6 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
               ))}
             </div>
           )}
-      </section>
-
-      {/* P3 复盘建议（知识/规则/偏好提炼，可采纳写入 AGENTS.md） */}
-      <section className={css.card} id="coach-suggestions-card">
-        <CardHead
-          title={t('coach.suggestions.title')}
-          sub={t('coach.suggestions.sub')}
-        />
-        {suggestions !== null && suggestions.targets.length > 0 && (
-          <div className={css.memTargets}>
-            {suggestions.targets.map(target => (
-              <span key={target.path} className={target.exists ? css.memTarget : css.memTargetNew}>
-                {target.kind === 'global' ? t('coach.suggestions.global') : t('coach.suggestions.workspace')}
-                {' · '}
-                <code>{target.path}</code>
-                {target.exists ? ` ✓ ${t('coach.suggestions.exists')}` : ` · ${t('coach.suggestions.willCreate')}`}
-              </span>
-            ))}
-          </div>
-        )}
-        {suggestions === null
-          ? <div className={css.muted}>{t('coach.suggestions.unavailable')}</div>
-          : suggestions.items.length === 0
-            ? <div className={css.muted}>{t('coach.suggestions.empty')}</div>
-            : (
-              <div className={css.suggestList}>
-                {suggestions.items.map(suggestion => {
-                  const accepted = acceptedIds.has(suggestion.id)
-                  return (
-                    <div key={suggestion.id} className={css.suggestRow}>
-                      <span className={suggestKindClass(suggestion.kind, css)}>
-                        {suggestKindLabel(suggestion.kind, t)}
-                      </span>
-                      <div className={css.suggestMain}>
-                        <div className={css.suggestTitle}>{suggestion.title}</div>
-                        <div className={css.suggestContent}>{suggestion.content}</div>
-                        <div className={css.suggestBasis}>
-                          {t('coach.suggestions.basis')} {suggestion.basis}
-                          {' · '}
-                          <code>{suggestion.target.path}</code>
-                        </div>
-                      </div>
-                      {accepted
-                        ? <span className={css.tagOk}>{t('coach.suggestions.accepted')} ✓</span>
-                        : (
-                          <button
-                            type="button"
-                            className={css.suggestAccept}
-                            onClick={() => acceptSuggestion(suggestion.id)}
-                            disabled={acceptingId !== null}
-                          >
-                            {acceptingId === suggestion.id ? t('coach.suggestions.accepting') : t('coach.suggestions.accept')}
-                          </button>
-                        )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
       </section>
 
       {detail !== null && report !== null ? (
@@ -821,8 +803,9 @@ function contextTargetSections(
     title: t('coach.context.drawerCount', { n: profile.pluginItems }),
     items: profile.pluginSummaries.length > 0 ? profile.pluginSummaries : [t('coach.drawer.noDetail')],
   }
+  const readableCount = report.agents.filter(agent => agent.readable).length
   const delegation: CoachDetailSection = {
-    title: t('coach.context.drawerCount', { n: profile.delegationTexts.length > 0 ? profile.delegationTexts.length : report.agents.length }),
+    title: `${t('coach.context.drawerCount', { n: profile.delegationTexts.length > 0 ? profile.delegationTexts.length : report.agents.length })} · ${t('coach.agents.derived', { total: report.agents.length, readable: readableCount })}`,
     items: profile.delegationTexts.length > 0
       ? profile.delegationTexts
       : report.agents.length > 0
