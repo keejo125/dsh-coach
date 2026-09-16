@@ -171,15 +171,29 @@
   fill: var(--dsw-alias-brand-primary);
 }
 
+/* 短板定位：雷达图对应维度顶点放大高亮 */
+.radarDotHot {
+  fill: var(--dsw-alias-state-error-primary);
+  transition: r 0.2s ease;
+}
+
 .radarLabel {
   font-size: 10px;
   fill: var(--dsw-alias-label-tertiary);
 }
 
-/* —— 统计条（9 项：交互/追问/干预/纠错/工具/失败/压缩/子Agent/Skill）—— */
+/* 雷达 hover 提示 */
+.radarHint {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--dsw-alias-label-tertiary);
+  text-align: center;
+}
+
+/* —— 统计条（全局汇总 12 项：交互/追问/干预/纠错/工具/失败/压缩/子Agent/Skill/Token/引用/产物）—— */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 8px;
 }
 
@@ -272,18 +286,11 @@
   background: var(--dsw-alias-bg-layer-2);
 }
 
-/* 引用分析：高频 Top / 未使用 两段并排；窄屏回退单列 */
+/* 引用分析：高频 Top / 未使用 两段（并排卡内单栏，避免栏宽不足截断） */
 .refPanels {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-}
-
-@media (max-width: 760px) {
-  .refPanels {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .refPanel {
@@ -729,59 +736,6 @@
 .skillFailed {
   color: var(--dsw-alias-state-error-primary);
   font-weight: 600;
-}
-
-/* —— 六维明细两列网格（压缩卡片高度，缓解与产物清单等高后的空白）—— */
-.dimGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 14px;
-  row-gap: 4px;
-}
-
-.dimItem {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 3px 0;
-}
-
-.dimTop {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 12px;
-  color: var(--dsw-alias-label-primary);
-}
-
-.dimScore {
-  font-weight: 600;
-  color: var(--dsw-alias-label-secondary);
-}
-
-.dimEn {
-  font-size: 10.5px;
-  color: var(--dsw-alias-label-tertiary);
-}
-
-/* 维度包装（短板定位滚动锚点 + 高亮动画） */
-.dimWrap {
-  border-radius: 8px;
-  padding: 2px 4px;
-}
-
-.dimHighlight {
-  outline: 1.5px solid var(--dsw-alias-brand-primary);
-  outline-offset: 2px;
-  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent);
-  transition: background 0.4s ease;
-}
-
-/* 维度解读：一行小字填充卡片空白（复盘教练价值） */
-.dimHint {
-  font-size: 10.5px;
-  color: var(--dsw-alias-label-tertiary);
-  line-height: 1.4;
 }
 
 /* 无用户消息轮次（工具处理轮）：弱化占位 */

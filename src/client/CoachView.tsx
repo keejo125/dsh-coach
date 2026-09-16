@@ -93,7 +93,27 @@ const DIMENSION_LABELS: Record<string, string> = {
 }
 
 /** 六维雷达：正六边形网格 + 数据多边形（SVG 手绘，无外部依赖）。 */
-function RadarChart({ dimensions }: { dimensions: CoachReport['score']['dimensions'] }): JSX.Element {
+/** 维度解读文案：i18n（coach.dim.hint.*），供雷达 hover。 */
+function dimHintOf(t: Translate, id: string): string {
+  switch (id) {
+    case 'completion': return t('coach.dim.hint.completion')
+    case 'efficiency': return t('coach.dim.hint.efficiency')
+    case 'recovery': return t('coach.dim.hint.recovery')
+    case 'artifact': return t('coach.dim.hint.artifact')
+    case 'delegation': return t('coach.dim.hint.delegation')
+    default: return t('coach.dim.hint.context')
+  }
+}
+
+function RadarChart({
+  dimensions,
+  t,
+  highlightId,
+}: {
+  dimensions: CoachReport['score']['dimensions']
+  t: Translate
+  highlightId?: string | null
+}): JSX.Element {
   const center = 110
   const radius = 74
   const value = (id: string): number => dimensions.find(d => d.id === id)?.score ?? 0
@@ -122,11 +142,20 @@ function RadarChart({ dimensions }: { dimensions: CoachReport['score']['dimensio
         />
       ))}
       <polygon points={dataPoints.map(([x, y]) => `${x},${y}`).join(' ')} className={css.radarData} />
-      {dataPoints.map(([x, y], i) => <circle key={order[i]} cx={x} cy={y} r={3} className={css.radarDot} />)}
+      {dataPoints.map(([x, y], i) => (
+        <circle
+          key={order[i]}
+          cx={x}
+          cy={y}
+          r={highlightId === order[i] ? 5 : 3}
+          className={highlightId === order[i] ? css.radarDotHot : css.radarDot}
+        />
+      ))}
       {order.map((id, i) => {
         const [x, y] = labelPoint(i)
         return (
           <text key={id} x={x} y={y} textAnchor="middle" dominantBaseline="middle" className={css.radarLabel}>
+            <title>{dimLabelOf(t, id)?.split(' ')[0] ?? DIMENSION_LABELS[id] ?? id} · {dimHintOf(t, id)}</title>
             {DIMENSION_LABELS[id] ?? id} {value(id)}
           </text>
         )
@@ -146,21 +175,6 @@ function dimLabelOf(t: Translate, id: string): string | undefined {
     case 'context': return t('coach.dim.context')
     default: return undefined
   }
-}
-
-/** 六维明细单维度：中文名 + 进度条 + 数值 + 英文小字（两行结构，避免长标签换行错乱）。 */
-function DimItem({ zh, en, score }: { zh: string; en: string; score: number }): JSX.Element {
-  const tone = score >= 80 ? css.barGood : (score >= 60 ? css.barMid : css.barPoor)
-  return (
-    <div className={css.dimItem}>
-      <div className={css.dimTop}>
-        <span className={css.dimZh}>{zh}</span>
-        <span className={css.dimScore}>{score}</span>
-      </div>
-      <div className={css.barTrack}><div className={`${css.barFill} ${tone}`} style={{ width: `${score}%` }} /></div>
-      <div className={css.dimEn}>{en}</div>
-    </div>
-  )
 }
 
 /** 卡片头：标题 + 副标题（汇总信息一句话，引用分析式）。 */
@@ -197,10 +211,10 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   /** 点击参考/产物文件 → 右侧抽屉打开正文。 */
   const openFile = (path: string): void => { setDrawerPath(path) }
 
-  /** 短板定位：点击质量分副标题 → 滚动到六维明细对应维度并短暂高亮。 */
+  /** 短板定位：点击质量分副标题 → 滚动到雷达卡并高亮对应维度（雷达即六维明细）。 */
   const jumpToDimension = (id: string): void => {
     setHighlightDim(id)
-    document.getElementById(`coach-dim-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    document.getElementById('coach-radar-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     window.setTimeout(() => setHighlightDim(null), 2200)
   }
 
@@ -238,8 +252,8 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         <button className={css.refresh} onClick={load}>{t('action.refresh')}</button>
       </div>
 
-      {/* 总分 + 雷达 + 统计（汇总层） */}
-      <div className={css.grid3}>
+      {/* 总分 + 雷达（总览层） */}
+      <div className={css.grid2}>
         <section className={css.card}>
           <div className={css.cardHead}>
             <div className={css.cardTitle}>{t('coach.score.title')}</div>
@@ -262,29 +276,34 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           )}
         </section>
 
-        <section className={css.card}>
+        <section className={css.card} id="coach-radar-card">
           <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
-          <RadarChart dimensions={report.score.dimensions} />
-        </section>
-
-        <section className={css.card}>
-          <CardHead
-            title={t('coach.stats.title')}
-            sub={report.skills.length > 0 ? t('coach.stats.sub', { skills: skillCalls, failed: skillFailed }) : undefined}
-          />
-          <div className={css.stats}>
-            <Stat label={t('coach.stats.interactions')} value={scope.userTurns} />
-            <Stat label={t('coach.stats.followUps')} value={signals.followUps} />
-            <Stat label={t('coach.stats.interventions')} value={signals.interventions} />
-            <Stat label={t('coach.stats.corrections')} value={signals.correctionTurns} />
-            <Stat label={t('coach.stats.toolCalls')} value={scope.toolCalls} />
-            <Stat label={t('coach.stats.failures')} value={scope.failedToolCalls} danger={scope.failedToolCalls > 0} />
-            <Stat label={t('coach.stats.compactions')} value={signals.compactions} />
-            <Stat label={t('coach.stats.delegations')} value={scope.delegations} />
-            <Stat label={t('coach.stats.skills')} value={skillCalls} danger={skillFailed > 0} />
-          </div>
+          <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
+          <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
         </section>
       </div>
+
+      {/* 本场统计（全局汇总：下方各卡核心指标上聚，与明细一一对应） */}
+      <section className={css.card}>
+        <CardHead
+          title={t('coach.stats.title')}
+          sub={t('coach.stats.subAll')}
+        />
+        <div className={css.stats}>
+          <Stat label={t('coach.stats.interactions')} value={scope.userTurns} />
+          <Stat label={t('coach.stats.followUps')} value={signals.followUps} />
+          <Stat label={t('coach.stats.interventions')} value={signals.interventions} />
+          <Stat label={t('coach.stats.corrections')} value={signals.correctionTurns} />
+          <Stat label={t('coach.stats.toolCalls')} value={scope.toolCalls} />
+          <Stat label={t('coach.stats.failures')} value={scope.failedToolCalls} danger={scope.failedToolCalls > 0} />
+          <Stat label={t('coach.stats.compactions')} value={signals.compactions} />
+          <Stat label={t('coach.stats.delegations')} value={report.agents.length} />
+          <Stat label={t('coach.stats.skills')} value={skillCalls} danger={skillFailed > 0} />
+          <Stat label={t('coach.stats.tokenTotal')} value={report.token !== null ? report.token.total : 0} />
+          <Stat label={t('coach.stats.refFiles')} value={report.references.totalFiles} />
+          <Stat label={t('coach.stats.artifacts')} value={report.artifacts.writtenFiles} />
+        </div>
+      </section>
 
       {/* Token 分布 + 上下文构成（资源使用） */}
       <div className={css.grid2}>
@@ -405,50 +424,6 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         )}
       </div>
 
-      {/* 引用分析（全宽：副标题汇总 + 高频/未使用两段明细，可点） */}
-      <section className={css.card}>
-        <CardHead
-          title={t('coach.references.title')}
-          sub={report.references.totalFiles > 0 ? t('coach.references.sub', {
-            files: report.references.totalFiles,
-            views: report.references.totalViews,
-            unused: report.references.unusedReferences.length,
-          }) : undefined}
-        />
-        {report.references.totalFiles === 0
-          ? <div className={css.muted}>{t('coach.references.empty')}</div>
-          : (
-            <div className={css.refPanels}>
-              <div className={css.refPanel}>
-                <div className={css.sectionLabel}>{t('coach.references.top')}</div>
-                {report.references.topReferences.length === 0
-                  ? <div className={css.muted}>{t('coach.references.empty')}</div>
-                  : report.references.topReferences.slice(0, 8).map(ref => (
-                    <div key={ref.path} className={css.refRow} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
-                      <span className={css.refPath} title={ref.path}>{ref.path}</span>
-                      <div className={css.barTrack}><div className={`${css.barFill} ${css.barGood}`} style={{ width: `${Math.min(100, ref.views * 20)}%` }} /></div>
-                      <span className={css.refViews}>×{ref.views}</span>
-                    </div>
-                  ))}
-              </div>
-              {report.references.unusedReferences.length > 0 && (
-                <div className={css.refPanel}>
-                  <div className={css.sectionLabel}>
-                    {t('coach.references.unused')}
-                    <span className={css.muted}> · {t('coach.references.unusedHint')}</span>
-                  </div>
-                  {report.references.unusedReferences.slice(0, 6).map(ref => (
-                    <div key={ref.path} className={`${css.refRow} ${css.unused}`} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
-                      <span className={css.refPath} title={ref.path}>{ref.path}</span>
-                      <span className={css.refViews}>×{ref.views}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-      </section>
-
       {/* 时间线 */}
       <section className={css.card}>
         <CardHead
@@ -475,29 +450,49 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           ))}
       </section>
 
-      {/* 六维明细 + 产物 */}
+      {/* 引用分析 + 产物清单（文件侧：读的引用 vs 写的产物） */}
       <div className={css.grid2}>
         <section className={css.card}>
           <CardHead
-            title={t('coach.dimensions.title')}
-            sub={lowest !== undefined ? t('coach.dimensions.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score }) : undefined}
+            title={t('coach.references.title')}
+            sub={report.references.totalFiles > 0 ? t('coach.references.sub', {
+              files: report.references.totalFiles,
+              views: report.references.totalViews,
+              unused: report.references.unusedReferences.length,
+            }) : undefined}
           />
-          <div className={css.dimGrid}>
-            {report.score.dimensions.map(dimension => (
-              <div
-                key={dimension.id}
-                id={`coach-dim-${dimension.id}`}
-                className={`${css.dimWrap} ${highlightDim === dimension.id ? css.dimHighlight : ''}`}
-              >
-                <DimItem
-                  zh={dimLabelOf(t, dimension.id)?.split(' ')[0] ?? DIMENSION_LABELS[dimension.id] ?? dimension.id}
-                  en={DIMENSION_LABELS[dimension.id] ?? dimension.id}
-                  score={dimension.score}
-                />
-                <div className={css.dimHint}>{t(`coach.dim.hint.${dimension.id}`)}</div>
+          {report.references.totalFiles === 0
+            ? <div className={css.muted}>{t('coach.references.empty')}</div>
+            : (
+              <div className={css.refPanels}>
+                <div className={css.refPanel}>
+                  <div className={css.sectionLabel}>{t('coach.references.top')}</div>
+                  {report.references.topReferences.length === 0
+                    ? <div className={css.muted}>{t('coach.references.empty')}</div>
+                    : report.references.topReferences.slice(0, 8).map(ref => (
+                      <div key={ref.path} className={css.refRow} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
+                        <span className={css.refPath} title={ref.path}>{ref.path}</span>
+                        <div className={css.barTrack}><div className={`${css.barFill} ${css.barGood}`} style={{ width: `${Math.min(100, ref.views * 20)}%` }} /></div>
+                        <span className={css.refViews}>×{ref.views}</span>
+                      </div>
+                    ))}
+                </div>
+                {report.references.unusedReferences.length > 0 && (
+                  <div className={css.refPanel}>
+                    <div className={css.sectionLabel}>
+                      {t('coach.references.unused')}
+                      <span className={css.muted}> · {t('coach.references.unusedHint')}</span>
+                    </div>
+                    {report.references.unusedReferences.slice(0, 6).map(ref => (
+                      <div key={ref.path} className={`${css.refRow} ${css.unused}`} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
+                        <span className={css.refPath} title={ref.path}>{ref.path}</span>
+                        <span className={css.refViews}>×{ref.views}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            )}
         </section>
 
         <section className={css.card}>
@@ -507,11 +502,13 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
               const iterated = report.artifacts.files.filter(file => file.opCount >= 2).length
               return iterated > 0
                 ? t('coach.artifacts.subIterated', {
+                    files: report.artifacts.writtenFiles,
                     created: report.artifacts.createdFiles,
                     updated: report.artifacts.updatedFiles,
                     iterated,
                   })
                 : t('coach.artifacts.sub', {
+                    files: report.artifacts.writtenFiles,
                     created: report.artifacts.createdFiles,
                     updated: report.artifacts.updatedFiles,
                   })
