@@ -191,6 +191,8 @@ export const zh = {
   'coach.context.drawerInject': '注入文件 · {n}',
   'coach.context.drawer.user': '用户输入',
   'coach.context.drawerCount': '共 {n} 条',
+  'coach.context.clickHint': '点击查看明细',
+  'coach.context.zeroHint': '本场无此内容，点击无明细',
   'coach.context.drawer.plugin': '系统注入',
   'coach.context.drawer.delegation': '委派指令',
   'coach.context.drawer.inject': '注入文件',

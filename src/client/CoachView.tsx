@@ -156,15 +156,26 @@ function RadarChart({
       ))}
       {order.map((id, i) => {
         const [x, y] = labelPoint(i)
+        const zh = dimLabelOf(t, id)?.split(' ')[0] ?? DIMENSION_LABELS[id] ?? id
+        const en = DIMENSION_LABELS[id] ?? id
         return (
           <text key={id} x={x} y={y} textAnchor="middle" dominantBaseline="middle" className={css.radarLabel}>
-            <title>{dimLabelOf(t, id)?.split(' ')[0] ?? DIMENSION_LABELS[id] ?? id} · {dimHintOf(t, id)}</title>
-            {DIMENSION_LABELS[id] ?? id} {value(id)}
+            <title>{zh} · {dimHintOf(t, id)}</title>
+            <tspan x={x} dy="-0.35em" className={css.radarLabelZh}>{zh}</tspan>
+            <tspan x={x} dy="1.15em" className={css.radarLabelEn}>{en} {value(id)}</tspan>
           </text>
         )
       })}
     </svg>
   )
+}
+
+/** 六维分数条色阶：≥90 绿 / 75~89 主色 / 60~74 灰 / <60 红。 */
+function dimBarTone(score: number): string {
+  if (score >= 90) return 'barToneHigh'
+  if (score >= 75) return 'barToneMid'
+  if (score >= 60) return 'barToneLow'
+  return 'barTonePoor'
 }
 
 /** 六维明细标签：i18n 双语（完成度 completion），无匹配回退 undefined。 */
@@ -214,11 +225,16 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   /** 点击参考/产物文件 → 右侧抽屉打开正文。 */
   const openFile = (path: string): void => { setDrawerPath(path) }
 
-  /** 短板定位：点击质量分副标题 → 滚动到雷达卡并高亮对应维度（雷达即六维明细）。 */
+  /** 短板定位：点击六维条/副标题 → 滚动到总览卡并高亮对应雷达顶点。 */
   const jumpToDimension = (id: string): void => {
     setHighlightDim(id)
     document.getElementById('coach-radar-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     window.setTimeout(() => setHighlightDim(null), 2200)
+  }
+
+  /** 统计数字点击 → 滚动定位到对应明细卡。 */
+  const scrollToCard = (id: string): void => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   useEffect(() => {
@@ -255,57 +271,82 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         <button className={css.refresh} onClick={load}>{t('action.refresh')}</button>
       </div>
 
-      {/* 评分总览（总分 + 六维雷达合一：雷达即总分的可视化分解） */}
-      <section className={css.card} id="coach-radar-card">
-        <div className={css.scoreOverview}>
-          <div className={css.scoreLeft}>
-            <div className={css.cardTitle}>{t('coach.score.title')}</div>
-            <div className={css.scoreBig}>{report.score.total}</div>
-            <span className={css.rating}>{t(`coach.score.rating.${rating}`)}</span>
-            {lowest !== undefined && (
-              <>
-                <button
-                  className={css.cardSubLink}
-                  onClick={() => jumpToDimension(lowest.id)}
-                  title={t('coach.score.jumpHint')}
-                >
-                  {t('coach.score.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score })} →
-                </button>
-                <div className={css.hint}>
-                  {DIMENSION_LABELS[lowest.id] ?? lowest.id} {lowest.score} · {t('coach.score.noDetail')}
-                </div>
-              </>
-            )}
+      {/* 顶部总览带：左=评分总览（总分/六维条/雷达三段），右=本场统计 12 项 */}
+      <div className={css.topOverview}>
+        <section className={css.card} id="coach-radar-card">
+          <div className={css.scoreOverview}>
+            <div className={css.scoreLeft}>
+              <div className={css.cardTitle}>{t('coach.score.title')}</div>
+              <div className={css.scoreBig}>{report.score.total}</div>
+              <span className={css.rating}>{t(`coach.score.rating.${rating}`)}</span>
+              {lowest !== undefined && (
+                <>
+                  <button
+                    className={css.cardSubLink}
+                    onClick={() => jumpToDimension(lowest.id)}
+                    title={t('coach.score.jumpHint')}
+                  >
+                    {t('coach.score.sub', { name: dimLabelOf(t, lowest.id)?.split(' ')[0] ?? lowest.id, score: lowest.score })} →
+                  </button>
+                  <div className={css.hint}>
+                    {DIMENSION_LABELS[lowest.id] ?? lowest.id} {lowest.score} · {t('coach.score.noDetail')}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className={css.scoreBars}>
+              {report.score.dimensions
+                .slice()
+                .sort((a, b) => b.score - a.score)
+                .map(dim => (
+                  <button
+                    key={dim.id}
+                    type="button"
+                    className={css.dimBarRow}
+                    onClick={() => jumpToDimension(dim.id)}
+                    title={dimHintOf(t, dim.id)}
+                  >
+                    <span className={css.dimBarLabel}>{dimLabelOf(t, dim.id)?.split(' ')[0] ?? DIMENSION_LABELS[dim.id] ?? dim.id}</span>
+                    <div className={css.dimBarTrack}>
+                      <div
+                        className={`${css.dimBarFill} ${dimBarTone(dim.score)}`}
+                        style={{ width: `${Math.min(100, dim.score)}%` }}
+                      />
+                    </div>
+                    <span className={css.dimBarScore}>{dim.score}</span>
+                  </button>
+                ))}
+            </div>
+            <div className={css.scoreRight}>
+              <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
+              <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
+              <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
+            </div>
           </div>
-          <div className={css.scoreRight}>
-            <CardHead title={t('coach.radar.title')} sub={t('coach.radar.sub', { avg: avgDim })} />
-            <RadarChart dimensions={report.score.dimensions} t={t} highlightId={highlightDim} />
-            <div className={css.radarHint}>{t('coach.radar.hoverHint')}</div>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* 本场统计（全局汇总：下方各卡核心指标上聚，与明细一一对应） */}
-      <section className={css.card}>
-        <CardHead
-          title={t('coach.stats.title')}
-          sub={t('coach.stats.subAll')}
-        />
-        <div className={css.stats}>
-          <Stat label={t('coach.stats.interactions')} value={scope.userTurns} />
-          <Stat label={t('coach.stats.followUps')} value={signals.followUps} />
-          <Stat label={t('coach.stats.interventions')} value={signals.interventions} />
-          <Stat label={t('coach.stats.corrections')} value={signals.correctionTurns} />
-          <Stat label={t('coach.stats.toolCalls')} value={scope.toolCalls} />
-          <Stat label={t('coach.stats.failures')} value={scope.failedToolCalls} danger={scope.failedToolCalls > 0} />
-          <Stat label={t('coach.stats.compactions')} value={signals.compactions} />
-          <Stat label={t('coach.stats.delegations')} value={report.agents.length} />
-          <Stat label={t('coach.stats.skills')} value={skillCalls} danger={skillFailed > 0} />
-          <Stat label={t('coach.stats.tokenTotal')} value={report.token !== null ? report.token.total : 0} />
-          <Stat label={t('coach.stats.refFiles')} value={report.references.totalFiles} />
-          <Stat label={t('coach.stats.artifacts')} value={report.artifacts.writtenFiles} />
-        </div>
-      </section>
+        {/* 本场统计（右上：全局 12 项汇总，3×4 数字格） */}
+        <section className={css.card}>
+          <CardHead
+            title={t('coach.stats.title')}
+            sub={t('coach.stats.subAll')}
+          />
+          <div className={css.stats}>
+            <Stat label={t('coach.stats.interactions')} value={scope.userTurns} onClick={() => setDetail({ kind: 'timeline' })} />
+            <Stat label={t('coach.stats.followUps')} value={signals.followUps} onClick={() => setDetail({ kind: 'timeline' })} />
+            <Stat label={t('coach.stats.interventions')} value={signals.interventions} onClick={() => setDetail({ kind: 'timeline' })} />
+            <Stat label={t('coach.stats.corrections')} value={signals.correctionTurns} onClick={() => setDetail({ kind: 'timeline' })} />
+            <Stat label={t('coach.stats.toolCalls')} value={scope.toolCalls} onClick={() => setDetail({ kind: 'timeline' })} />
+            <Stat label={t('coach.stats.failures')} value={scope.failedToolCalls} danger={scope.failedToolCalls > 0} onClick={() => setDetail({ kind: 'timeline' })} />
+            <Stat label={t('coach.stats.compactions')} value={signals.compactions} onClick={() => setDetail({ kind: 'timeline' })} />
+            <Stat label={t('coach.stats.delegations')} value={report.agents.length} onClick={() => scrollToCard('coach-agents-card')} />
+            <Stat label={t('coach.stats.skills')} value={skillCalls} danger={skillFailed > 0} onClick={() => scrollToCard('coach-skills-card')} />
+            <Stat label={t('coach.stats.tokenTotal')} value={report.token !== null ? report.token.total : 0} onClick={() => setDetail({ kind: 'token' })} />
+            <Stat label={t('coach.stats.refFiles')} value={report.references.totalFiles} onClick={() => scrollToCard('coach-refs-card')} />
+            <Stat label={t('coach.stats.artifacts')} value={report.artifacts.writtenFiles} onClick={() => scrollToCard('coach-artifacts-card')} />
+          </div>
+        </section>
+      </div>
 
       {/* Token 分布 + 上下文构成（资源使用） */}
       <div className={css.grid2}>
@@ -364,12 +405,12 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             ? <div className={css.muted}>{t('coach.stats.none')}</div>
             : (
               <div className={css.contextGrid}>
-                <ContextStat label={t('coach.context.userItems')} value={report.contextProfile.userItems} onClick={() => setDetail({ kind: 'context', target: 'user' })} />
-                <ContextStat label={t('coach.context.pluginItems')} value={report.contextProfile.pluginItems} onClick={() => setDetail({ kind: 'context', target: 'plugin' })} />
-                <ContextStat label={t('coach.context.delegations')} value={report.contextProfile.delegations} onClick={() => setDetail({ kind: 'context', target: 'delegation' })} />
-                <ContextStat label={t('coach.context.injectFiles')} value={report.contextProfile.injectFiles} onClick={() => setDetail({ kind: 'context', target: 'inject' })} />
-                <ContextStat label={t('coach.context.finalSegments')} value={report.contextProfile.finalSegments} onClick={() => setDetail({ kind: 'context', target: 'final' })} />
-                <ContextStat label={t('coach.context.processSegments')} value={report.contextProfile.processSegments} onClick={() => setDetail({ kind: 'context', target: 'process' })} />
+                <ContextStat t={t} label={t('coach.context.userItems')} value={report.contextProfile.userItems} onClick={() => setDetail({ kind: 'context', target: 'user' })} />
+                <ContextStat t={t} label={t('coach.context.pluginItems')} value={report.contextProfile.pluginItems} onClick={() => setDetail({ kind: 'context', target: 'plugin' })} />
+                <ContextStat t={t} label={t('coach.context.delegations')} value={report.contextProfile.delegations} onClick={() => setDetail({ kind: 'context', target: 'delegation' })} />
+                <ContextStat t={t} label={t('coach.context.injectFiles')} value={report.contextProfile.injectFiles} onClick={() => setDetail({ kind: 'context', target: 'inject' })} />
+                <ContextStat t={t} label={t('coach.context.finalSegments')} value={report.contextProfile.finalSegments} onClick={() => setDetail({ kind: 'context', target: 'final' })} />
+                <ContextStat t={t} label={t('coach.context.processSegments')} value={report.contextProfile.processSegments} onClick={() => setDetail({ kind: 'context', target: 'process' })} />
               </div>
             )}
         </section>
@@ -377,7 +418,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
 
       {/* 子智能体 + Skill 调用（被调用的实体，关联并排） */}
       <div className={css.grid2}>
-        <section className={css.card}>
+        <section className={css.card} id="coach-agents-card">
           <CardHead
             title={t('coach.agents.title')}
             sub={report.agents.length > 0 ? t('coach.agents.sub', { n: report.agents.length }) : undefined}
@@ -412,7 +453,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
         </section>
 
         {report.skills.length > 0 && (
-          <section className={css.card}>
+          <section className={css.card} id="coach-skills-card">
             <CardHead
               title={t('coach.skills.title')}
               sub={t('coach.skills.sub', { calls: skillCalls, failed: skillFailed })}
@@ -468,7 +509,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
 
       {/* 引用分析 + 产物清单（文件侧：读的引用 vs 写的产物） */}
       <div className={css.grid2}>
-        <section className={css.card}>
+        <section className={css.card} id="coach-refs-card">
           <CardHead
             title={t('coach.references.title')}
             sub={report.references.totalFiles > 0 ? t('coach.references.sub', {
@@ -511,7 +552,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             )}
         </section>
 
-        <section className={css.card}>
+        <section className={css.card} id="coach-artifacts-card">
           <CardHead
             title={t('coach.artifacts.title')}
             sub={report.artifacts.writtenFiles > 0 ? (() => {
@@ -880,19 +921,43 @@ export function RoundDetail({ round, t, onSelectFile }: {
   )
 }
 
-function Stat({ label, value, danger = false }: { label: string; value: number; danger?: boolean }): JSX.Element {  return (
-    <div className={css.stat}>
+function Stat({ label, value, danger = false, onClick }: {
+  label: string
+  value: number
+  danger?: boolean
+  onClick?: () => void
+}): JSX.Element {
+  return (
+    <button
+      className={css.stat}
+      onClick={onClick}
+      type="button"
+      {...(onClick !== undefined ? {} : { disabled: true })}
+    >
       <b className={danger ? css.danger : undefined}>{value}</b>
       <span>{label}</span>
-    </div>
+    </button>
   )
 }
 
-function ContextStat({ label, value, onClick }: { label: string; value: number; onClick?: () => void }): JSX.Element {
+function ContextStat({ label, value, onClick, t }: {
+  label: string
+  value: number
+  onClick?: () => void
+  t: Translate
+}): JSX.Element {
+  const disabled = value === 0
   return (
-    <button className={css.contextStat} onClick={onClick} type="button">
+    <button
+      className={css.contextStat}
+      onClick={disabled ? undefined : onClick}
+      type="button"
+      disabled={disabled}
+      title={disabled ? t('coach.context.zeroHint') : t('coach.context.clickHint')}
+    >
       <b>{value}</b>
       <span>{label}</span>
+      {!disabled && <span className={css.contextStatArrow}>{'›'}</span>}
     </button>
   )
 }

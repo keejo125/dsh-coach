@@ -190,6 +190,8 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.context.drawerInject': 'Injected files · {n}',
   'coach.context.drawer.user': 'User inputs',
   'coach.context.drawerCount': '{n} items',
+  'coach.context.clickHint': 'Click for details',
+  'coach.context.zeroHint': 'No items this session',
   'coach.context.drawer.plugin': 'System injects',
   'coach.context.drawer.delegation': 'Delegations',
   'coach.context.drawer.inject': 'Injected files',

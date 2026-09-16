@@ -124,16 +124,24 @@
 }
 
 /* —— 总分卡 —— */
-/* —— 评分总览（总分 + 雷达合一）—— */
+/* —— 顶部总览带（左评分总览三段 + 右本场统计 12 项）—— */
+.topOverview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 12px;
+  align-items: stretch;
+}
+
+/* —— 评分总览（总分 / 六维条 / 雷达 三段）—— */
 .scoreOverview {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .scoreLeft {
   flex: none;
-  width: 200px;
+  width: 148px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -142,9 +150,87 @@
   border-right: 1px solid var(--dsw-alias-border-l2, rgba(127, 127, 127, 0.2));
 }
 
-.scoreRight {
+.scoreBars {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px 0;
+}
+
+.dimBarRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+}
+
+.dimBarRow:hover {
+  background: var(--dsw-alias-bg-layer-2, rgba(127, 127, 127, 0.1));
+}
+
+.dimBarLabel {
+  flex: none;
+  width: 44px;
+  font-size: 11px;
+  color: var(--dsw-alias-label-secondary, #4e5969);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dimBarTrack {
+  flex: 1;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--dsw-alias-bg-layer-2, rgba(127, 127, 127, 0.18));
+  overflow: hidden;
+  min-width: 0;
+}
+
+.dimBarFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.barToneHigh {
+  background: var(--dsw-alias-state-success-primary, #2e7d32);
+}
+
+.barToneMid {
+  background: var(--dsw-alias-brand-primary, #3d7eff);
+}
+
+.barToneLow {
+  background: var(--dsw-alias-label-tertiary, #9aa4b2);
+}
+
+.barTonePoor {
+  background: var(--dsw-alias-state-danger-primary, #d92d20);
+}
+
+.dimBarScore {
+  flex: none;
+  width: 22px;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-primary, #1f2328);
+}
+
+.scoreRight {
+  flex: none;
+  width: 208px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -208,6 +294,17 @@
   fill: var(--dsw-alias-label-tertiary);
 }
 
+.radarLabelZh {
+  font-size: 9px;
+  fill: var(--dsw-alias-label-secondary, #4e5969);
+  font-weight: 600;
+}
+
+.radarLabelEn {
+  font-size: 8px;
+  fill: var(--dsw-alias-label-tertiary, #9aa4b2);
+}
+
 /* 雷达 hover 提示 */
 .radarHint {
   margin-top: 6px;
@@ -219,25 +316,36 @@
 /* —— 统计条（全局汇总 12 项：交互/追问/干预/纠错/工具/失败/压缩/子Agent/Skill/Token/引用/产物）—— */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
 .stat {
   background: var(--dsw-alias-bg-layer-2);
   border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
+  padding: 7px 10px;
+  font-size: 11.5px;
   color: var(--dsw-alias-label-primary);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  width: 100%;
 }
 
 .stat b {
   display: block;
   font-size: 18px;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat .danger {
   color: var(--dsw-alias-state-error-primary);
+}
+
+.stat:hover {
+  border-color: var(--dsw-alias-brand-primary, #3d7eff);
+  background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.16));
 }
 
 /* —— 子智能体（列表超限时内部滚动，保证卡片清爽）—— */
@@ -416,6 +524,7 @@
 }
 
 .contextStat {
+  position: relative;
   background: var(--dsw-alias-bg-layer-2);
   border-radius: 8px;
   padding: 8px 10px;
@@ -431,6 +540,26 @@
 .contextStat:hover {
   border-color: var(--dsw-alias-brand-primary, #3d7eff);
   background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.16));
+}
+
+.contextStat:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.contextStatArrow {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+.contextStat:hover .contextStatArrow {
+  opacity: 1;
+  color: var(--dsw-alias-brand-primary, #3d7eff);
 }
 
 .contextStat b {

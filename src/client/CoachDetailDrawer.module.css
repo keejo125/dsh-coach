@@ -87,7 +87,7 @@
 /* —— 文本条目（带 tone 徽章）—— */
 .item {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 8px;
   font-size: 12px;
   line-height: 1.6;
@@ -124,6 +124,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.itemTextOpen {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.itemMore {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  font-size: 12px;
+  opacity: 0.6;
 }
 
 .itemClickable {

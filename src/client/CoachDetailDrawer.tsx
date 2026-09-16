@@ -4,7 +4,7 @@
  *  - bars：条形进度（数值占比，如 Token 全量轮次）
  *  - items：文本条目（带序号徽章、tone 徽章；可带 path 点击打开文件正文）
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { IconCloseOutline16 } from './icons/index.tsx'
 import type { Translate } from './components/AgentBadge.tsx'
 import css from './CoachDetailDrawer.module.css'
@@ -46,6 +46,46 @@ function toneClass(tone: CoachDetailItem['tone']): string {
     case 'warn': return css.toneWarn ?? ''
     default: return ''
   }
+}
+
+/** 文本条目行：默认 2 行截断，点行展开全文；可点条目（path）点击打开文件。 */
+function ItemRow({
+  entry,
+  index,
+  onSelectItem,
+}: {
+  entry: CoachDetailItem
+  index: number
+  onSelectItem?: (path: string) => void
+}): JSX.Element {
+  const [expanded, setExpanded] = useState(false)
+  const clickable = entry.path !== undefined && onSelectItem !== undefined
+  if (clickable) {
+    return (
+      <button
+        type="button"
+        className={`${css.item} ${toneClass(entry.tone)} ${css.itemClickable}`}
+        title={entry.text}
+        onClick={() => { onSelectItem(entry.path as string) }}
+      >
+        <span className={css.itemIndex}>{index + 1}</span>
+        <span className={css.itemText}>{entry.text}</span>
+      </button>
+    )
+  }
+  return (
+    <button
+      type="button"
+      className={`${css.item} ${toneClass(entry.tone)}`}
+      onClick={() => { setExpanded(v => !v) }}
+    >
+      <span className={css.itemIndex}>{index + 1}</span>
+      <span className={`${css.itemText} ${expanded ? css.itemTextOpen : ''}`} title={expanded ? undefined : entry.text}>
+        {entry.text}
+      </span>
+      {!expanded && <span className={css.itemMore}>{'›'}</span>}
+    </button>
+  )
 }
 
 export function CoachDetailDrawer({ title, sections, t, onClose, onSelectItem }: CoachDetailDrawerProps): JSX.Element {
@@ -97,28 +137,14 @@ export function CoachDetailDrawer({ title, sections, t, onClose, onSelectItem }:
                 ) : (
                   (section.items ?? []).map((item, index) => {
                     const entry = typeof item === 'string' ? { text: item } as CoachDetailItem : item
-                    const clickable = entry.path !== undefined && onSelectItem !== undefined
-                    const content = (
-                      <>
-                        <span className={css.itemIndex}>{index + 1}</span>
-                        <span className={css.itemText}>{entry.text}</span>
-                      </>
+                    return (
+                      <ItemRow
+                        key={index}
+                        entry={entry}
+                        index={index}
+                        {...(onSelectItem !== undefined ? { onSelectItem } : {})}
+                      />
                     )
-                    return clickable
-                      ? (
-                        <button
-                          key={index}
-                          type="button"
-                          className={`${css.item} ${toneClass(entry.tone)} ${css.itemClickable}`}
-                          title={entry.text}
-                          onClick={() => { onSelectItem(entry.path as string) }}
-                        >
-                          {content}
-                        </button>
-                      )
-                      : (
-                        <div key={index} className={`${css.item} ${toneClass(entry.tone)}`} title={entry.text}>{content}</div>
-                      )
                   })
                 )}
               </section>
