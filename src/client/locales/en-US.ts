@@ -171,6 +171,8 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.token.drawerTitle': 'Token full breakdown',
   'coach.token.allTurnsTitle': 'All turns · {n}',
   'coach.token.profile.title': 'Input composition',
+  'coach.token.profile.chars': 'Chars',
+  'coach.token.profile.counts': 'Counts',
   'coach.token.profile.estimate': 'estimated from event text volume',
   'coach.token.profile.system': 'System prompt',
   'coach.token.profile.user': 'User prompts',

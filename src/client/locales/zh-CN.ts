@@ -172,6 +172,8 @@ export const zh = {
   'coach.token.drawerTitle': 'Token 全量明细',
   'coach.token.allTurnsTitle': '全量轮次 · {n} 轮',
   'coach.token.profile.title': '输入构成',
+  'coach.token.profile.chars': '字符量',
+  'coach.token.profile.counts': '次数',
   'coach.token.profile.estimate': '按事件文本量估算',
   'coach.token.profile.system': '系统提示词',
   'coach.token.profile.user': '用户提示',

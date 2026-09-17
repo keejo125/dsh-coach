@@ -567,6 +567,28 @@
 .turnBarsWrap {
   margin-bottom: 14px;
 }
+.turnBarsHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.turnBarsTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-secondary);
+}
+.turnTip {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--dsw-alias-label-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .turnBars {
   display: flex;
   align-items: flex-end;
@@ -939,7 +961,26 @@ button.profileLegendItem:hover {
   margin-bottom: 6px;
 }
 
+.profileDual {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.profileRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.profileRowLabel {
+  flex: none;
+  width: 40px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
 .profileBar {
+  flex: 1;
   display: flex;
   height: 8px;
   border-radius: 4px;

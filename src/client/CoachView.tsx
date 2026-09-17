@@ -210,6 +210,8 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [detail, setDetail] = useState<CoachDetail | null>(null)
   /** 每轮分布柱联动：高亮下方时间线对应轮（R{n}），4s 后自动消退。 */
   const [highlightTurn, setHighlightTurn] = useState<number | null>(null)
+  /** 每轮分布柱 hover：显示该轮 Token 量 tooltip。 */
+  const [hoverTurn, setHoverTurn] = useState<number | null>(null)
   useEffect(() => {
     if (highlightTurn === null) return
     const timer = setTimeout(() => setHighlightTurn(null), 4000)
@@ -425,9 +427,18 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
               {/* 汇总：每轮 Token 分布（全量柱图，hover 看量，点击联动下方时间线对应轮） */}
               {report.token.perTurn.length > 0 && (
                 <div className={css.turnBarsWrap}>
-                  <div className={css.tokenProfileTitle}>
-                    <span>{t('coach.token.perTurn.title')}</span>
-                    <span className={css.muted}>{t('coach.token.perTurn.hint')}</span>
+                  <div className={css.turnBarsHead}>
+                    <span className={css.turnBarsTitle}>{t('coach.token.perTurn.title')}</span>
+                    <span className={css.turnTip}>
+                      {hoverTurn !== null
+                        ? (() => {
+                            const tn = report.token.perTurn.find(turn => turn.turn === hoverTurn)
+                            return tn !== undefined
+                              ? `R${tn.turn} · ${tn.total.toLocaleString()} · ${tn.text.length > 0 ? tn.text : t('coach.token.toolTurn')}`
+                              : t('coach.token.perTurn.hint')
+                          })()
+                        : t('coach.token.perTurn.hint')}
+                    </span>
                   </div>
                   <div className={css.turnBars}>
                     {(() => {
@@ -440,7 +451,10 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                           className={`${css.turnBar} ${highlightTurn === turn.turn ? css.turnBarActive : ''}`}
                           style={{ height: `${Math.max(4, (turn.total / maxTurn) * 100)}%` }}
                           onClick={() => jumpToTimelineTurn(turn.turn)}
-                          title={`R${turn.turn} · ${turn.total.toLocaleString()} · ${turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}`}
+                          onMouseEnter={() => setHoverTurn(turn.turn)}
+                          onMouseLeave={() => setHoverTurn(null)}
+                          onFocus={() => setHoverTurn(turn.turn)}
+                          onBlur={() => setHoverTurn(null)}
                           aria-label={`R${turn.turn} ${turn.total.toLocaleString()}`}
                         />
                       ))
@@ -1254,32 +1268,40 @@ function renderTokenProfile(
         <span>{t('coach.token.profile.title')}</span>
         <span className={css.muted}>{t('coach.token.profile.estimate')}</span>
       </div>
-      <div className={css.profileBar}>
-        {visible
-          .filter(part => part.value > 0)
-          .map(part => (
-            <div
-              key={part.key}
-              className={`${css.profileSeg} ${css[`profileSeg_${part.key}`]}`}
-              style={{ width: `${(part.value / totalChars) * 100}%` }}
-              title={`${labelOf(part.key)} · ${part.value.toLocaleString()}`}
-            />
-          ))}
-      </div>
-      {totalCounts > 0 && (
-        <div className={css.profileBar}>
-          {visible
-            .filter(part => part.count > 0)
-            .map(part => (
-              <div
-                key={part.key}
-                className={`${css.profileSeg} ${css[`profileSeg_${part.key}`]}`}
-                style={{ width: `${(part.count / totalCounts) * 100}%` }}
-                title={`${labelOf(part.key)} · ${part.count}${unitOf(part.key)}`}
-              />
-            ))}
+      <div className={css.profileDual}>
+        <div className={css.profileRow}>
+          <span className={css.profileRowLabel}>{t('coach.token.profile.chars')}</span>
+          <div className={css.profileBar}>
+            {visible
+              .filter(part => part.value > 0)
+              .map(part => (
+                <div
+                  key={part.key}
+                  className={`${css.profileSeg} ${css[`profileSeg_${part.key}`]}`}
+                  style={{ width: `${(part.value / totalChars) * 100}%` }}
+                  title={`${labelOf(part.key)} · ${part.value.toLocaleString()}`}
+                />
+              ))}
+          </div>
         </div>
-      )}
+        {totalCounts > 0 && (
+          <div className={css.profileRow}>
+            <span className={css.profileRowLabel}>{t('coach.token.profile.counts')}</span>
+            <div className={css.profileBar}>
+              {visible
+                .filter(part => part.count > 0)
+                .map(part => (
+                  <div
+                    key={part.key}
+                    className={`${css.profileSeg} ${css[`profileSeg_${part.key}`]}`}
+                    style={{ width: `${(part.count / totalCounts) * 100}%` }}
+                    title={`${labelOf(part.key)} · ${part.count}${unitOf(part.key)}`}
+                  />
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
       <div className={css.profileLegend}>
         {visible.map(part => {
           const inner = (
