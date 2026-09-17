@@ -6,7 +6,7 @@
  * 六维明细 · 产物清单。数据一次拉取（report + timeline 并行），刷新即重算。
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CoachAgentSummary, CoachArtifactFile, CoachArtifacts, CoachReport, CoachSkillStats, CoachTimeline, CoachTimelineRound, FileTreeNode } from '../shared/types.ts'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
@@ -208,10 +208,41 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [loading, setLoading] = useState(true)
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
   const [detail, setDetail] = useState<CoachDetail | null>(null)
+  /** 抽屉焦点管理：打开时记录触发元素，关闭后焦点归位（WCAG 2.4.7）。 */
+  const lastFocusRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (detail !== null || drawerPath !== null) {
+      lastFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    } else if (lastFocusRef.current !== null) {
+      lastFocusRef.current.focus()
+      lastFocusRef.current = null
+    }
+  }, [detail, drawerPath])
   /** 每轮分布柱联动：高亮下方时间线对应轮（R{n}），4s 后自动消退。 */
   const [highlightTurn, setHighlightTurn] = useState<number | null>(null)
   /** 每轮分布柱 hover：显示该轮 Token 量 tooltip。 */
   const [hoverTurn, setHoverTurn] = useState<number | null>(null)
+  /** hover 柱中心在容器内的横向百分比（浮层锚点）。 */
+  const [hoverLeft, setHoverLeft] = useState<number | null>(null)
+  /** hover 柱顶在容器内的 bottom 偏移（px），浮层紧贴柱顶。 */
+  const [hoverBottom, setHoverBottom] = useState<number | null>(null)
+  /** 柱图 roving tabindex：左右键切换聚焦柱，减少 Tab 位。 */
+  const [rovingTurn, setRovingTurn] = useState<number | null>(null)
+  const turnBarsRef = useRef<HTMLDivElement | null>(null)
+  const turnBarRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const handleTurnBarsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+    event.preventDefault()
+    if (report === null || report.token === null) return
+    const turns = report.token.perTurn
+    if (turns.length === 0) return
+    const current = rovingTurn ?? turns[0]!.turn
+    const index = turns.findIndex(turn => turn.turn === current)
+    const delta = event.key === 'ArrowRight' ? 1 : -1
+    const next = (index + delta + turns.length) % turns.length
+    setRovingTurn(turns[next]!.turn)
+    turnBarRefs.current[next]?.focus()
+  }
   useEffect(() => {
     if (highlightTurn === null) return
     const timer = setTimeout(() => setHighlightTurn(null), 4000)
@@ -429,35 +460,55 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 <div className={css.turnBarsWrap}>
                   <div className={css.turnBarsHead}>
                     <span className={css.turnBarsTitle}>{t('coach.token.perTurn.title')}</span>
-                    <span className={css.turnTip}>
-                      {hoverTurn !== null
-                        ? (() => {
-                            const tn = report.token.perTurn.find(turn => turn.turn === hoverTurn)
-                            return tn !== undefined
-                              ? `R${tn.turn} · ${tn.total.toLocaleString()} · ${tn.text.length > 0 ? tn.text : t('coach.token.toolTurn')}`
-                              : t('coach.token.perTurn.hint')
-                          })()
-                        : t('coach.token.perTurn.hint')}
-                    </span>
                   </div>
-                  <div className={css.turnBars}>
+                  <div className={css.turnBarsHint}>{t('coach.token.perTurn.hint')}</div>
+                  <div
+                    ref={turnBarsRef}
+                    className={css.turnBars}
+                    role="group"
+                    aria-label={t('coach.token.perTurn.title')}
+                    tabIndex={0}
+                    onKeyDown={handleTurnBarsKeyDown}
+                  >
                     {(() => {
                       const turns = report.token.perTurn
                       const maxTurn = Math.max(1, ...turns.map(turn => turn.total))
-                      return turns.map(turn => (
+                      return turns.map((turn, index) => (
                         <button
                           key={turn.turn}
+                          ref={el => { turnBarRefs.current[index] = el }}
                           type="button"
+                          tabIndex={rovingTurn === turn.turn ? 0 : -1}
                           className={`${css.turnBar} ${highlightTurn === turn.turn ? css.turnBarActive : ''}`}
                           style={{ height: `${Math.max(4, (turn.total / maxTurn) * 100)}%` }}
                           onClick={() => jumpToTimelineTurn(turn.turn)}
-                          onMouseEnter={() => setHoverTurn(turn.turn)}
-                          onMouseLeave={() => setHoverTurn(null)}
-                          onFocus={() => setHoverTurn(turn.turn)}
-                          onBlur={() => setHoverTurn(null)}
-                          aria-label={`R${turn.turn} ${turn.total.toLocaleString()}`}
+                          onMouseEnter={(event) => {
+                            const wrap = turnBarsRef.current
+                            if (wrap !== null) {
+                              const center = event.currentTarget.offsetLeft + event.currentTarget.offsetWidth / 2
+                              setHoverLeft(Math.min(90, Math.max(10, (center / wrap.clientWidth) * 100)))
+                            }
+                            setHoverBottom(event.currentTarget.offsetHeight + 6)
+                            setHoverTurn(turn.turn)
+                          }}
+                          onMouseLeave={() => { setHoverTurn(null); setHoverLeft(null); setHoverBottom(null) }}
+                          onFocus={() => { setRovingTurn(turn.turn); setHoverTurn(turn.turn); setHoverLeft(null); setHoverBottom(null) }}
+                          onBlur={() => { setHoverTurn(null); setHoverLeft(null); setHoverBottom(null) }}
+                          aria-label={`R${turn.turn} ${turn.total.toLocaleString()} ${t('coach.token.unit')}`}
                         />
                       ))
+                    })()}
+                    {hoverTurn !== null && hoverLeft !== null && hoverBottom !== null && report.token !== null && (() => {
+                      const tn = report.token.perTurn.find(turn => turn.turn === hoverTurn)
+                      if (tn === undefined) return null
+                      const label = tn.text.length > 0 ? tn.text : t('coach.token.toolTurn')
+                      return (
+                        <div className={css.turnTip} style={{ left: `${hoverLeft}%`, bottom: `${hoverBottom}px` }} role="status">
+                          <span className={css.turnTipRound}>R{tn.turn}</span>
+                          <span className={css.turnTipTokens}>{tn.total.toLocaleString()} {t('coach.token.unit')}</span>
+                          <span className={css.turnTipText}>{label}</span>
+                        </div>
+                      )
                     })()}
                   </div>
                   <div className={css.turnBarsAxis}>
@@ -483,7 +534,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   switch (key) {
                     case 'user': setDetail({ kind: 'context', target: 'user' }); break
                     case 'delegation': setDetail({ kind: 'context', target: 'delegation' }); break
-                    case 'tools': scrollToCard('coach-timeline-card'); break
+                    case 'tools': setDetail({ kind: 'context', target: 'tools' }); break
                     case 'plugin': setDetail({ kind: 'context', target: 'plugin' }); break
                     default: break
                   }
@@ -689,7 +740,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           : (
             <div className={css.timelineFull}>
               {timeline.rounds.map((round, index) => {
-                const roundNo = round.kind === 'initial' ? '★' : `R${index + 1}`
+                const roundNo = round.kind === 'initial' ? 'R1' : `R${index + 1}`
                 return (
                   <button
                     key={index}
@@ -776,7 +827,7 @@ function SkillRecentCalls({ timeline, skills, t, onOpen }: {
 /** 下钻目标（右侧抽屉）。 */
 type CoachDetail =
   | { kind: 'token' }
-  | { kind: 'context'; target: 'user' | 'plugin' | 'delegation' | 'inject' | 'process' | 'final' }
+  | { kind: 'context'; target: 'user' | 'plugin' | 'delegation' | 'inject' | 'process' | 'final' | 'tools' }
   | { kind: 'contextAll' }
   | { kind: 'agent'; sessionId: string }
   | { kind: 'skill'; name: string }
@@ -807,8 +858,8 @@ function detailDrawerSections(
 ): CoachDetailSection[] {
   switch (detail.kind) {
     case 'token': return tokenDrawerSections(t, report)
-    case 'context': return contextTargetSections(detail.target, report, t)
-    case 'contextAll': return contextTargetSections('all', report, t)
+    case 'context': return contextTargetSections(detail.target, report, timeline, t)
+    case 'contextAll': return contextTargetSections('all', report, timeline, t)
     case 'timeline':
     case 'timelineTurn':
       return []
@@ -906,8 +957,9 @@ function tokenDrawerSections(t: Translate, report: CoachReport): CoachDetailSect
 
 /** 上下文抽屉：点击具体数字 → 单节；「查看明细」→ 全量（all）。 */
 function contextTargetSections(
-  target: 'user' | 'plugin' | 'delegation' | 'inject' | 'process' | 'final' | 'all',
+  target: 'user' | 'plugin' | 'delegation' | 'inject' | 'process' | 'final' | 'tools' | 'all',
   report: CoachReport,
+  timeline: CoachTimeline | null,
   t: Translate,
 ): CoachDetailSection[] {
   const profile = report.contextProfile
@@ -937,11 +989,34 @@ function contextTargetSections(
     title: t('coach.context.drawerCountOnly'),
     items: [t('coach.context.drawerCountOnlyHint')],
   }
+  const toolSections: CoachDetailSection[] = timeline !== null
+    ? timeline.rounds
+        .map((round, index) => {
+          if (round.actions.length === 0) return null
+          return {
+            title: `${index === 0 ? 'R1' : `R${index + 1}`} · ${t('coach.context.drawerToolsCount', { n: round.actions.length })}`,
+            items: round.actions.map(action => {
+              const failed = action.failed ? ` · ${t('coach.context.drawerToolsFailed')}` : ''
+              const path = action.path !== null ? ` · ${action.path}` : ''
+              return `${action.name}${path}${failed}`
+            }),
+          } as CoachDetailSection
+        })
+        .filter((section): section is CoachDetailSection => section !== null)
+    : []
+  const toolTotal = toolSections.reduce((sum, section) => sum + (section.items?.length ?? 0), 0)
+  const tools: CoachDetailSection = {
+    title: t('coach.context.drawerToolsTitle', { n: toolTotal }),
+    items: toolSections.length > 0
+      ? toolSections.flatMap(section => section.items ?? [])
+      : [t('coach.drawer.noDetail')],
+  }
   switch (target) {
     case 'user': return [user]
     case 'plugin': return [plugin]
     case 'delegation': return [delegation]
     case 'inject': return [inject]
+    case 'tools': return toolSections.length > 0 ? toolSections : [tools]
     case 'process': return [counted]
     case 'final': return [counted]
     case 'all':
@@ -1042,13 +1117,25 @@ function TimelineDrawer({
   focusIndex?: number
 }): JSX.Element {
   const focused = focusIndex === undefined || focusIndex < 0 || focusIndex >= rounds.length ? null : rounds[focusIndex]!
+  // Esc 关闭 + 打开时焦点移入面板（WCAG 2.4.7）
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    window.setTimeout(() => { panelRef.current?.focus() }, 0)
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey) }
+  }, [onClose])
   return (
     <div className={detailCss.mask} onClick={onClose}>
       <div
+        ref={panelRef}
         className={detailCss.panel}
         onClick={event => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-label={focused !== null
           ? t('coach.timeline.turnTitle', { n: focusIndex! + 1 })
           : t('coach.timeline.drawerTitle', { n: rounds.length })}

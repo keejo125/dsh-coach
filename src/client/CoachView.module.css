@@ -20,7 +20,7 @@
 
 .suggestCount {
   font-size: 12px;
-  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  color: #5f6673;
   border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.3));
   border-radius: 999px;
   padding: 0 9px;
@@ -30,7 +30,7 @@
 .suggestChevron {
   margin-left: auto;
   font-size: 18px;
-  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  color: #5f6673;
   transition: transform 0.18s ease;
 }
 
@@ -266,7 +266,7 @@
 }
 
 .barToneLow {
-  background: var(--dsw-alias-label-tertiary, #9aa4b2);
+  background: #5f6673;
 }
 
 .barTonePoor {
@@ -346,7 +346,7 @@
 
 .radarLabel {
   font-size: 10px;
-  fill: var(--dsw-alias-label-tertiary);
+  fill: #5f6673;
 }
 
 .radarLabelZh {
@@ -365,8 +365,8 @@
 /* 雷达 hover 提示 */
 .radarHint {
   margin-top: 6px;
-  font-size: 10.5px;
-  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  color: #5f6673;
   text-align: center;
 }
 
@@ -461,7 +461,7 @@
   padding: 9px 11px;
   margin-bottom: 8px;
   background: var(--dsw-alias-bg-layer-0, rgba(127, 127, 127, 0.05));
-  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  color: #5f6673;
   cursor: default;
   font: inherit;
   opacity: 0.75;
@@ -471,7 +471,7 @@
   display: inline-block;
   margin-left: 8px;
   font-size: 11px;
-  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  color: #5f6673;
   border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.35));
   border-radius: 999px;
   padding: 0 8px;
@@ -560,7 +560,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
 }
 
 /* —— Token 每轮分布柱图（汇总，点击联动下方时间线） —— */
@@ -572,28 +572,28 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .turnBarsTitle {
   font-size: 12px;
   font-weight: 600;
   color: var(--dsw-alias-label-secondary);
 }
-.turnTip {
-  flex: 1;
-  min-width: 0;
-  text-align: right;
+.turnBarsHint {
   font-size: 11.5px;
-  color: var(--dsw-alias-label-tertiary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #5f6673;
+  margin-bottom: 8px;
 }
 .turnBars {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 2px;
   height: 96px;
+}
+.turnBars:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary, #3d7eff);
+  outline-offset: 2px;
 }
 .turnBar {
   flex: 1;
@@ -605,9 +605,10 @@
   cursor: pointer;
   opacity: 0.85;
 }
-.turnBar:hover {
+.turnBar:hover,
+.turnBar:focus-visible {
   opacity: 1;
-  outline: 1px solid var(--dsw-alias-border-l3);
+  outline: 2px solid var(--dsw-alias-brand-primary, #3d7eff);
   outline-offset: 1px;
 }
 .turnBarActive {
@@ -615,11 +616,44 @@
   outline: 2px solid var(--dsw-alias-state-warn-primary);
   outline-offset: 1px;
 }
+.turnTip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 300px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-0, rgba(24, 26, 30, 0.92));
+  border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.35));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  font-size: 11.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+}
+.turnTipRound {
+  font-weight: 700;
+  color: var(--dsw-alias-label-primary);
+  font-variant-numeric: tabular-nums;
+}
+.turnTipTokens {
+  font-weight: 600;
+  color: var(--dsw-alias-brand-primary, #3d7eff);
+  font-variant-numeric: tabular-nums;
+}
+.turnTipText {
+  color: var(--dsw-alias-label-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .turnBarsAxis {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
   margin-top: 3px;
 }
 
@@ -629,7 +663,7 @@
   padding-top: 8px;
   border-top: 1px dashed var(--dsw-alias-border-l2);
   font-size: 12px;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
 }
 
 /* 时间线行：柱联动高亮（R 标签匹配） */
@@ -641,7 +675,7 @@
 
 /* 输入构成图例：次数副值 + 可点击下钻 */
 .profileCount {
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
   font-weight: 500;
   margin-left: 2px;
 }
@@ -694,7 +728,7 @@ button.profileLegendItem:hover {
   top: 6px;
   right: 7px;
   font-size: 11px;
-  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  color: #5f6673;
   opacity: 0.35;
   transition: opacity 0.15s ease;
 }
@@ -752,12 +786,13 @@ button.profileLegendItem:hover {
 .chatUser {
   align-self: flex-end;
   max-width: 88%;
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.6;
   color: var(--dsw-alias-label-primary-inverted);
   background: var(--dsw-alias-brand-primary);
   border-radius: 12px 12px 3px 12px;
-  padding: 7px 11px;
+  padding: 8px 12px;
+  margin-top: 4px;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -808,7 +843,7 @@ button.profileLegendItem:hover {
   cursor: pointer;
   font-size: 11px;
   font-weight: 600;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
   user-select: none;
 }
 
@@ -846,17 +881,25 @@ button.profileLegendItem:hover {
 
 /* —— 徽标 —— */
 .tagInitial {
+  flex: none;
   font-size: 11px;
-  background: var(--dsw-alias-state-success-primary);
-  color: var(--dsw-alias-label-primary-inverted);
+  min-width: 62px;
+  text-align: center;
+  background: rgba(46, 125, 50, 0.14);
+  color: #1a5a2e;
+  border: 1px solid rgba(46, 125, 50, 0.45);
   border-radius: 6px;
   padding: 1px 7px;
 }
 
 .tagFollow {
+  flex: none;
   font-size: 11px;
-  background: var(--dsw-alias-state-warn-primary);
-  color: var(--dsw-alias-label-primary-inverted);
+  min-width: 62px;
+  text-align: center;
+  background: rgba(181, 71, 8, 0.14);
+  color: #7a2d00;
+  border: 1px solid rgba(181, 71, 8, 0.45);
   border-radius: 6px;
   padding: 1px 7px;
 }
@@ -868,22 +911,25 @@ button.profileLegendItem:hover {
   font-size: 11px;
   border-radius: 999px;
   padding: 0 7px;
-  border: none;
+  border: 1px solid transparent;
 }
 
 .tagOk {
   background: rgba(46, 125, 50, 0.12);
-  color: var(--dsw-alias-state-success-primary);
+  color: #1a5a2e;
+  border-color: rgba(46, 125, 50, 0.45);
 }
 
 .tagWarn {
   background: rgba(181, 71, 8, 0.12);
-  color: var(--dsw-alias-state-warn-primary);
+  color: #7a2d00;
+  border-color: rgba(181, 71, 8, 0.45);
 }
 
 .tagError {
   background: rgba(217, 45, 32, 0.1);
-  color: var(--dsw-alias-state-error-primary);
+  color: #8f1d14;
+  border-color: rgba(217, 45, 32, 0.45);
 }
 
 /* —— 六维明细 —— */
@@ -897,13 +943,13 @@ button.profileLegendItem:hover {
 
 .scoreLabel {
   width: 92px;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
 }
 
 .scoreValue {
   width: 28px;
   text-align: right;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
 }
 
 .barTrack {
@@ -976,7 +1022,7 @@ button.profileLegendItem:hover {
   width: 40px;
   text-align: right;
   font-size: 11px;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
   font-variant-numeric: tabular-nums;
 }
 .profileBar {
@@ -992,11 +1038,11 @@ button.profileLegendItem:hover {
   height: 100%;
 }
 
-.profileSeg_system { background: var(--dsw-alias-brand-primary); }
-.profileSeg_user { background: var(--dsw-alias-state-success-primary); }
-.profileSeg_tools { background: var(--dsw-alias-state-warn-primary); }
-.profileSeg_plugin { background: var(--dsw-alias-label-tertiary); }
-.profileSeg_delegation { background: var(--dsw-alias-state-error-primary); }
+.profileSeg_system { background: #4e5969; }
+.profileSeg_user { background: #0b7a75; }
+.profileSeg_tools { background: #2f88ff; }
+.profileSeg_plugin { background: #86909c; }
+.profileSeg_delegation { background: #722ed1; }
 
 .profileLegend {
   display: grid;
@@ -1028,10 +1074,11 @@ button.profileLegendItem:hover {
   display: inline-block;
 }
 
-.profileDot_system { background: var(--dsw-alias-brand-primary); }
-.profileDot_user { background: var(--dsw-alias-state-success-primary); }
-.profileDot_tools { background: var(--dsw-alias-state-warn-primary); }
-.profileDot_plugin { background: var(--dsw-alias-label-tertiary); }
+.profileDot_system { background: #4e5969; }
+.profileDot_user { background: #0b7a75; }
+.profileDot_tools { background: #2f88ff; }
+.profileDot_plugin { background: #86909c; }
+.profileDot_delegation { background: #722ed1; }
 
 /* —— 产物清单（树超高时限高内部滚动，与六维明细等高不爆白）—— */
 .artifactScroll {
@@ -1129,7 +1176,7 @@ button.profileLegendItem:hover {
 .skillRecentNo {
   flex: none;
   font-weight: 700;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1154,7 +1201,7 @@ button.profileLegendItem:hover {
 
 .skillRecentEmpty {
   font-size: 11.5px;
-  color: var(--dsw-alias-label-tertiary);
+  color: #5f6673;
   padding: 2px 6px;
 }
 
@@ -1252,7 +1299,7 @@ button.profileLegendItem:hover {
 
 .roundArrow {
   margin-left: auto;
-  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  color: #5f6673;
   font-size: 14px;
   flex: none;
 }
@@ -1260,16 +1307,17 @@ button.profileLegendItem:hover {
 .tagRef {
   font-size: 11px;
   background: rgba(61, 126, 255, 0.12);
-  color: var(--dsw-alias-brand-primary, #3d7eff);
+  color: #1d4f9c;
+  border: 1px solid rgba(61, 126, 255, 0.45);
   border-radius: 999px;
   padding: 0 7px;
 }
 
 /* 标签溢出折叠（>3 个时收成 +N） */
 .tagMore {
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--dsw-alias-label-secondary, #4e5969);
+  color: #4e5969;
   background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.22));
   border-radius: 999px;
   padding: 0 7px;
@@ -1278,7 +1326,9 @@ button.profileLegendItem:hover {
 }
 
 /* 键盘焦点可见环（WCAG 2.4.7） */
-.grid :focus-visible {
+.grid2 :focus-visible,
+.card :focus-visible,
+.roundRow:focus-visible {
   outline: 2px solid var(--dsw-alias-brand-primary, #3d7eff);
   outline-offset: 2px;
 }
@@ -1372,7 +1422,7 @@ button.profileLegendItem:hover {
 
 .suggestBasis {
   font-size: 11px;
-  color: var(--dsw-alias-label-tertiary, #9aa4b2);
+  color: #5f6673;
   margin-top: 4px;
   word-break: break-all;
 }
@@ -1380,8 +1430,9 @@ button.profileLegendItem:hover {
 .suggestKindPreference {
   flex: none;
   font-size: 11px;
-  color: #8b5cf6;
-  border: 1px solid #8b5cf6;
+  color: #5b2e9e;
+  background: rgba(139, 92, 246, 0.14);
+  border: 1px solid rgba(139, 92, 246, 0.45);
   border-radius: 6px;
   padding: 1px 8px;
   margin-top: 1px;
@@ -1390,8 +1441,9 @@ button.profileLegendItem:hover {
 .suggestKindRule {
   flex: none;
   font-size: 11px;
-  color: var(--dsw-alias-state-warn-primary, #b54708);
-  border: 1px solid var(--dsw-alias-state-warn-primary, #b54708);
+  color: #7a2d00;
+  background: rgba(181, 71, 8, 0.14);
+  border: 1px solid rgba(181, 71, 8, 0.45);
   border-radius: 6px;
   padding: 1px 8px;
   margin-top: 1px;
@@ -1400,8 +1452,9 @@ button.profileLegendItem:hover {
 .suggestKindKnowledge {
   flex: none;
   font-size: 11px;
-  color: var(--dsw-alias-state-success-primary, #2e7d32);
-  border: 1px solid var(--dsw-alias-state-success-primary, #2e7d32);
+  color: #1a5a2e;
+  background: rgba(46, 125, 50, 0.14);
+  border: 1px solid rgba(46, 125, 50, 0.45);
   border-radius: 6px;
   padding: 1px 8px;
   margin-top: 1px;

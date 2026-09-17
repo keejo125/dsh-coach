@@ -4,7 +4,7 @@
  *  - bars：条形进度（数值占比，如 Token 全量轮次）
  *  - items：文本条目（带序号徽章、tone 徽章；可带 path 点击打开文件正文）
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { IconCloseOutline16 } from './icons/index.tsx'
 import type { Translate } from './components/AgentBadge.tsx'
 import css from './CoachDetailDrawer.module.css'
@@ -90,7 +90,9 @@ function ItemRow({
 
 export function CoachDetailDrawer({ title, sections, t, onClose, onSelectItem }: CoachDetailDrawerProps): JSX.Element {
   // Esc 关闭
+  const panelRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
+    window.setTimeout(() => { panelRef.current?.focus() }, 0)
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') onClose()
     }
@@ -105,10 +107,12 @@ export function CoachDetailDrawer({ title, sections, t, onClose, onSelectItem }:
   return (
     <div className={css.mask} onClick={onClose}>
       <div
+        ref={panelRef}
         className={css.panel}
         onClick={event => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-label={title}
       >
         <div className={css.header}>

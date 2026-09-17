@@ -3,7 +3,7 @@
  * 与 Context 插件的抽屉同视觉（主题令牌跟随），按 Esc / 点遮罩关闭，支持全屏放大。
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CoachApiError, fetchCoachFile, type CoachFileContent } from './coach-client.ts'
 import { IconCloseOutline16, IconFullscreenOutline16 } from './icons/index.tsx'
 import type { Translate } from './components/AgentBadge.tsx'
@@ -26,8 +26,10 @@ export function CoachDrawer({ sessionId, path, t, onClose }: CoachDrawerProps): 
   const [zoom, setZoom] = useState(false)
   const [body, setBody] = useState<DrawerBody>({ state: 'loading' })
 
-  // Esc 关闭
+  // Esc 关闭 + 打开时焦点移入面板（WCAG 2.4.7）
+  const panelRef = useRef<HTMLElement | null>(null)
   useEffect(() => {
+    window.setTimeout(() => { panelRef.current?.focus() }, 0)
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') onClose()
     }
@@ -66,9 +68,11 @@ export function CoachDrawer({ sessionId, path, t, onClose }: CoachDrawerProps): 
   return (
     <div className={css.mask} onClick={onClose} role="presentation">
       <section
+        ref={panelRef}
         className={`${css.panel}${zoom ? ` ${css.zoom}` : ''}`}
         role="dialog"
         aria-label={t('coach.drawer.title')}
+        tabIndex={-1}
         onClick={event => { event.stopPropagation() }}
       >
         <header className={css.header}>
