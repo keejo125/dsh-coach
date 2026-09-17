@@ -99,9 +99,11 @@ describe('report · 子智能体汇总', () => {
     const report = await buildCoachReport(engine, 'main')
     expect(report.scope.delegations).toBe(2)
     expect(report.agents).toHaveLength(2)
-    const reviewer = report.agents.find(a => a.label === 'code-review')
+    // 子代理 label = preset 名 + `· id前6位`（同 preset 可肉眼区分）
+    const reviewer = report.agents.find(a => a.label.startsWith('code-review'))
     expect(reviewer).toMatchObject({ readFiles: 1, toolCalls: 1, failedToolCalls: 0, hasFinalAnswer: true })
-    const tester = report.agents.find(a => a.label === 'tester')
+    expect(reviewer!.label).toMatch(/^code-review · \S+$/)
+    const tester = report.agents.find(a => a.label.startsWith('tester'))
     expect(tester).toMatchObject({ writtenFiles: 1, hasFinalAnswer: false })
     // v0.2b 产物清单：子会话产物并入主清单（全 agent 视角，同 Context 输出树）
     expect(report.artifacts.writtenFiles).toBe(1)

@@ -355,9 +355,11 @@
   font-weight: 600;
 }
 
-.radarLabelEn {
-  font-size: 8px;
-  fill: var(--dsw-alias-label-tertiary, #9aa4b2);
+.radarLabelVal {
+  font-size: 9.5px;
+  fill: var(--dsw-alias-label-primary, #1f2328);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 雷达 hover 提示 */
@@ -423,6 +425,26 @@
   color: inherit;
   cursor: pointer;
   font: inherit;
+}
+
+.agentZeroRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary, #4e5969);
+  background: transparent;
+  border: 1px dashed var(--dsw-alias-border-l2, rgba(127, 127, 127, 0.3));
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.agentZeroRow:hover {
+  background: var(--dsw-alias-bg-layer-2, rgba(127, 127, 127, 0.08));
 }
 
 .agentRow:hover {
@@ -816,28 +838,29 @@
   padding: 1px 7px;
 }
 
-.tagOk {
+.tagOk,
+.tagWarn,
+.tagError,
+.tagRef {
   font-size: 11px;
-  color: var(--dsw-alias-state-success-primary);
-  border: 1px solid var(--dsw-alias-state-success-primary);
   border-radius: 999px;
   padding: 0 7px;
+  border: none;
+}
+
+.tagOk {
+  background: rgba(46, 125, 50, 0.12);
+  color: var(--dsw-alias-state-success-primary);
 }
 
 .tagWarn {
-  font-size: 11px;
+  background: rgba(181, 71, 8, 0.12);
   color: var(--dsw-alias-state-warn-primary);
-  border: 1px solid var(--dsw-alias-state-warn-primary);
-  border-radius: 999px;
-  padding: 0 7px;
 }
 
 .tagError {
-  font-size: 11px;
+  background: rgba(217, 45, 32, 0.1);
   color: var(--dsw-alias-state-error-primary);
-  border: 1px solid var(--dsw-alias-state-error-primary);
-  border-radius: 999px;
-  padding: 0 7px;
 }
 
 /* —— 六维明细 —— */
@@ -1196,8 +1219,8 @@
 
 .tagRef {
   font-size: 11px;
+  background: rgba(61, 126, 255, 0.12);
   color: var(--dsw-alias-brand-primary, #3d7eff);
-  border: 1px solid var(--dsw-alias-brand-primary, #3d7eff);
   border-radius: 999px;
   padding: 0 7px;
 }

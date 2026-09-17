@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import type { CoachArtifactFile, CoachArtifacts, CoachReport, CoachSkillStats, CoachTimeline, CoachTimelineRound, FileTreeNode } from '../shared/types.ts'
+import type { CoachAgentSummary, CoachArtifactFile, CoachArtifacts, CoachReport, CoachSkillStats, CoachTimeline, CoachTimelineRound, FileTreeNode } from '../shared/types.ts'
 import type { ConvViewProps } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import {
@@ -163,12 +163,11 @@ function RadarChart({
       {order.map((id, i) => {
         const [x, y] = labelPoint(i)
         const zh = dimLabelOf(t, id)?.split(' ')[0] ?? DIMENSION_LABELS[id] ?? id
-        const en = DIMENSION_LABELS[id] ?? id
         return (
           <text key={id} x={x} y={y} textAnchor="middle" dominantBaseline="middle" className={css.radarLabel}>
             <title>{zh} · {dimHintOf(t, id)}</title>
             <tspan x={x} dy="-0.35em" className={css.radarLabelZh}>{zh}</tspan>
-            <tspan x={x} dy="1.15em" className={css.radarLabelEn}>{en} {value(id)}</tspan>
+            <tspan x={x} dy="1.1em" className={css.radarLabelVal}>{value(id)}</tspan>
           </text>
         )
       })}
@@ -209,6 +208,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [loading, setLoading] = useState(true)
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
   const [detail, setDetail] = useState<CoachDetail | null>(null)
+  const [agentsZeroOpen, setAgentsZeroOpen] = useState(false)
   const [highlightDim, setHighlightDim] = useState<string | null>(null)
 
   const load = (): void => {
@@ -259,8 +259,11 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const scope = report.scope
   const signals = report.signals
   const avgDim = Math.round(report.score.dimensions.reduce((sum, d) => sum + d.score, 0) / report.score.dimensions.length)
-  const skillCalls = report.skills.reduce((sum, s) => sum + s.calls, 0)
-  const skillFailed = report.skills.reduce((sum, s) => sum + s.failed, 0)
+  const skillToolStatsMap = skillToolStats(timeline, report.skills)
+  const skillCalls = [...skillToolStatsMap.values()].reduce((sum, s) => sum + s.calls, 0)
+  const skillFailed = [...skillToolStatsMap.values()].reduce((sum, s) => sum + s.failed, 0)
+  // 抽屉打开时禁用触发行原生 title，避免残留气泡浮在 dialog 之上（P2-7）
+  const detailActive = detail !== null || drawerPath !== null
 
   return (
     <div className={css.wrap}>
@@ -349,7 +352,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   <span key={target.path} className={target.exists ? css.memTarget : css.memTargetNew}>
                     {target.kind === 'global' ? t('coach.suggestions.global') : t('coach.suggestions.workspace')}
                     {' · '}
-                    <code>{target.path}</code>
+                    <code title={target.path}>{fileNameOf(target.path)}</code>
                     {target.exists ? ` ✓ ${t('coach.suggestions.exists')}` : ` · ${t('coach.suggestions.willCreate')}`}
                   </span>
                 ))}
@@ -372,7 +375,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                           <div className={css.suggestBasis}>
                             {t('coach.suggestions.basis')} {suggestion.basis}
                             {' · '}
-                            <code>{suggestion.target.path}</code>
+                            <code title={suggestion.target.path}>{fileNameOf(suggestion.target.path)}</code>
                           </div>
                         </div>
                       </div>
@@ -407,7 +410,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                     return turns.map(turn => (
                       <div key={turn.turn} className={css.turnRow}>
                         <span className={css.turnTag}>R{turn.turn}</span>
-                        <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={turn.text}>
+                        <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={detailActive ? undefined : turn.text}>
                           {turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}
                         </span>
                         <div className={css.barTrack}>
@@ -469,33 +472,58 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             ? <div className={css.muted}>{t('coach.agents.empty')}</div>
             : (
               <div className={css.agentList}>
-                {report.agents.map(agent => (
-                  <button
-                    key={agent.sessionId}
-                    className={agent.readable ? css.agentRow : css.agentRowUnreadable}
-                    type="button"
-                    onClick={agent.readable ? () => setDetail({ kind: 'agent', sessionId: agent.sessionId }) : undefined}
-                    title={agent.readable ? t('coach.agents.viewDetail') : t('coach.agents.unreadable')}
-                    disabled={!agent.readable}
-                  >
-                    <div className={css.agentName}>
-                      {agent.label}
-                      {agent.task !== null && (
-                        <span className={css.agentTask} title={agent.task}>{agent.task}</span>
-                      )}
-                      {!agent.readable && (
-                        <span className={css.agentUnreadableTag}>{t('coach.agents.unreadable')}</span>
-                      )}
-                    </div>
-                    {agent.readable && (
-                      <div className={css.agentMeta}>
-                        {t('coach.agents.readFiles', { n: agent.readFiles })} · {t('coach.agents.toolCalls', { n: agent.toolCalls })}
-                        {' · '}{agent.failedToolCalls > 0 ? t('coach.agents.failures', { n: agent.failedToolCalls }) : t('coach.agents.hasFinal')}
-                        {' · '}{t('coach.agents.writtenFiles', { n: agent.writtenFiles })}
+                {(() => {
+                  const renderAgentRow = (agent: CoachAgentSummary): JSX.Element => (
+                    <button
+                      key={agent.sessionId}
+                      className={agent.readable ? css.agentRow : css.agentRowUnreadable}
+                      type="button"
+                      onClick={agent.readable ? () => setDetail({ kind: 'agent', sessionId: agent.sessionId }) : undefined}
+                      title={agent.readable
+                        ? (detailActive ? undefined : t('coach.agents.viewDetail'))
+                        : t('coach.agents.unreadable')}
+                      disabled={!agent.readable}
+                    >
+                      <div className={css.agentName}>
+                        {agent.label}
+                        {agent.task !== null && (
+                          <span className={css.agentTask} title={detailActive ? undefined : agent.task}>{agent.task}</span>
+                        )}
+                        {!agent.readable && (
+                          <span className={css.agentUnreadableTag}>{t('coach.agents.unreadable')}</span>
+                        )}
                       </div>
-                    )}
-                  </button>
-                ))}
+                      {agent.readable && (
+                        <div className={css.agentMeta}>
+                          {t('coach.agents.readFiles', { n: agent.readFiles })} · {t('coach.agents.toolCalls', { n: agent.toolCalls })}
+                          {' · '}{agent.failedToolCalls > 0 ? t('coach.agents.failures', { n: agent.failedToolCalls }) : t('coach.agents.hasFinal')}
+                          {' · '}{t('coach.agents.writtenFiles', { n: agent.writtenFiles })}
+                        </div>
+                      )}
+                    </button>
+                  )
+                  // 全零卡降噪（P2-10）：读/工具/产物均 0 的子代理折叠为一行，点击展开
+                  const zero = report.agents.filter(agent =>
+                    agent.readable && agent.readFiles === 0 && agent.toolCalls === 0 && agent.writtenFiles === 0)
+                  const actives = report.agents.filter(agent => !zero.includes(agent))
+                  return (
+                    <>
+                      {actives.map(renderAgentRow)}
+                      {zero.length > 0 && (
+                        <button
+                          type="button"
+                          className={css.agentZeroRow}
+                          onClick={() => setAgentsZeroOpen(open => !open)}
+                          aria-expanded={agentsZeroOpen}
+                        >
+                          <span>{t('coach.agents.zeroRow', { n: zero.length })}</span>
+                          <span className={`${css.suggestChevron}${agentsZeroOpen ? ` ${css.suggestChevronOpen}` : ''}`}>›</span>
+                        </button>
+                      )}
+                      {agentsZeroOpen && zero.map(renderAgentRow)}
+                    </>
+                  )
+                })()}
               </div>
             )}
         </section>
@@ -507,7 +535,9 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
               sub={t('coach.skills.sub', { calls: skillCalls, failed: skillFailed })}
             />
             <div className={css.skillList}>
-              {report.skills.map(skill => (
+              {report.skills.map(skill => {
+                const stats = skillToolStatsMap.get(skill.name) ?? { calls: 0, failed: 0 }
+                return (
                 <button
                   key={skill.name}
                   className={css.skillRow}
@@ -516,10 +546,11 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   title={t('coach.skills.viewDetail')}
                 >
                   <span className={css.skillName} title={skill.name}>{skill.name}</span>
-                  <span className={css.skillCalls}>{t('coach.skills.calls')} <b>{skill.calls}</b></span>
-                  {skill.failed > 0 && <span className={css.skillFailed}>{t('coach.skills.failed')} {skill.failed}</span>}
+                  <span className={css.skillCalls}>{t('coach.skills.calls')} <b>{stats.calls}</b></span>
+                  {stats.failed > 0 && <span className={css.skillFailed}>{t('coach.skills.failed')} {stats.failed}</span>}
                 </button>
-              ))}
+                )
+              })}
             </div>
             <SkillRecentCalls timeline={timeline} skills={report.skills} t={t} onOpen={name => setDetail({ kind: 'skill', name })} />
           </section>
@@ -548,7 +579,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                     const unused = report.references.unusedReferences.some(candidate => candidate.path === ref.path)
                     return (
                       <div key={ref.path} className={css.refRow} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
-                        <span className={css.refPath} title={ref.path}>{ref.path}</span>
+                        <span className={css.refPath} title={detailActive ? undefined : ref.path}>{shortenPath(ref.path)}</span>
                         <div className={css.barTrack}>
                           <div
                             className={`${css.barFill} ${unused ? css.barMid : css.barGood}`}
@@ -601,7 +632,13 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       <section className={css.card} id="coach-timeline-card">
         <CardHead
           title={t('coach.timeline.title')}
-          sub={timeline !== null ? t('coach.timeline.sub', { n: timeline.rounds.length }) : t('coach.timeline.expandHint')}
+          sub={timeline !== null
+            ? t('coach.timeline.sub', {
+                n: timeline.rounds.length,
+                total: report.token?.perTurn.length ?? timeline.rounds.length,
+                tool: report.token?.perTurn.filter(turn => turn.text.length === 0).length ?? 0,
+              })
+            : t('coach.timeline.expandHint')}
         />
         {timeline === null || timeline.rounds.length === 0
           ? <div className={css.muted}>{t('coach.timeline.noRounds')}</div>
@@ -883,9 +920,46 @@ function suggestKindLabel(kind: CoachSuggestionKind, t: Translate): string {
   }
 }
 
+/**
+ * 路径尾部保留截断（P2-6）：长路径保留「父目录/文件名」尾部，前缀折叠为 …/，
+ * 避免多条仅前缀相同的路径截断后肉眼同名。title 仍保留完整路径。
+ */
+function shortenPath(path: string, max = 28): string {
+  if (path.length <= max) return path
+  const parts = path.split('/')
+  const file = parts.pop() ?? ''
+  const parent = parts.pop()
+  const tail = parent !== undefined ? `${parent}/${file}` : file
+  if (tail.length + 3 <= max) return `…/${tail}`
+  if (file.length + 3 <= max) return `…/${file}`
+  return `…/${file.slice(-(max - 3))}`
+}
+
+/** 文件名（末段），完整路径放 title/aria（P2-9）。 */
+function fileNameOf(path: string): string {
+  const parts = path.split('/')
+  return parts[parts.length - 1] ?? path
+}
+
+/** Skill 工具级调用口径（P1-1）：与「最近调用」列表同源（时间线 actions），
+ *  头部计数与行内计数、最近调用列表三者自洽。 */
+function skillToolStats(timeline: CoachTimeline | null, skills: readonly CoachSkillStats[]): Map<string, { calls: number; failed: number }> {
+  const names = new Set(skills.map(skill => skill.name))
+  const stats = new Map<string, { calls: number; failed: number }>()
+  for (const round of timeline?.rounds ?? []) {
+    for (const action of round.actions) {
+      if (!names.has(action.name)) continue
+      const entry = stats.get(action.name) ?? { calls: 0, failed: 0 }
+      entry.calls += 1
+      if (action.failed) entry.failed += 1
+      stats.set(action.name, entry)
+    }
+  }
+  return stats
+}
+
 /** 时间线轮次标签（干预/纠错/引用/产物），最多显示 limit 个，超出折叠为 +N。 */
-function roundTagsOf(round: CoachTimelineRound, t: Translate, limit: number): JSX.Element[] {
-  const tags: JSX.Element[] = []
+function roundTagsOf(round: CoachTimelineRound, t: Translate, limit: number): JSX.Element[] {  const tags: JSX.Element[] = []
   if (round.signals.intervention) {
     tags.push(<span key="intervention" className={css.tagWarn}>{t('coach.timeline.intervention')}</span>)
   }

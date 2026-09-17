@@ -127,7 +127,7 @@ async function summarizeAgents(
       // C01：子会话日志不可读 → 灰行占位（保留派生态，各计数为 0，不静默丢弃）
       summaries.push({
         sessionId: childId,
-        label: labelOf(header.agentPreset),
+        label: agentLabel(header.agentPreset, childId),
         task: null,
         role: 'subagent',
         userTurns: 0,
@@ -145,7 +145,7 @@ async function summarizeAgents(
     const childScan = scanCoachEvents(childLog.events, childLog.session.cwd)
     summaries.push({
       sessionId: childId,
-      label: labelOf(header.agentPreset),
+      label: agentLabel(header.agentPreset, childId),
       task: extractAgentTask(childLog.events),
       role: 'subagent',
       userTurns: childScan.scope.userTurns,
@@ -166,6 +166,17 @@ async function summarizeAgents(
 function labelOf(agentPreset: string | undefined): string {  if (agentPreset === undefined || agentPreset.length === 0) return '子Agent'
   const last = agentPreset.split(/[\/:]/).pop()
   return last !== undefined && last.length > 0 ? last : '子Agent'
+}
+
+/**
+ * 子 Agent 展示名：preset 名 + `· id前6位`。
+ * 同场多个子代理常共用同一 preset（如 standard），纯 preset 名无法肉眼区分，
+ * 追加会话 id 短码作为稳定区分锚（UI 评审 P1-2）。
+ */
+function agentLabel(agentPreset: string | undefined, sessionId: string): string {
+  const base = labelOf(agentPreset)
+  if (agentPreset === undefined || agentPreset.length === 0) return base
+  return `${base} · ${sessionId.slice(0, 6)}`
 }
 
 /** 任务缩写上限（字符）。 */
