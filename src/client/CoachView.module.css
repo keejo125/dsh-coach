@@ -563,76 +563,77 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
-/* Token 分布轮次标签：窄标签（不复用 refPath 160px 宽），消除 R 标签后留白 */
-.turnTag {
-  flex: none;
-  min-width: 26px;
-  font-weight: 600;
-  color: var(--dsw-alias-label-secondary);
+/* —— Token 每轮分布柱图（汇总，点击联动下方时间线） —— */
+.turnBarsWrap {
+  margin-bottom: 14px;
 }
-
-.refViews {
-  color: var(--dsw-alias-label-secondary);
-  white-space: nowrap;
-}
-
-.unused {
-  color: var(--dsw-alias-state-error-primary);
-}
-
-/* —— Token —— */
-.turnRow {
+.turnBars {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  margin-bottom: 5px;
-  color: var(--dsw-alias-label-secondary);
+  align-items: flex-end;
+  gap: 2px;
+  height: 96px;
 }
-
-/* 轮次小标题：R 标签后的该轮任务摘要，固定宽度保证所有进度条左缘对齐 */
-.turnText {
-  flex: none;
-  width: 170px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--dsw-alias-label-tertiary);
-  font-size: 11px;
-}
-
-/* 轮次明细容器（输入构成汇总在下方的旧结构废弃后统一为列表） */
-.turnList {
-  margin-top: 2px;
-}
-
-/* Token 轮次数值：等宽 + 固定宽度右对齐（与进度条右缘对齐） */
-.turnValue {
-  flex: none;
-  min-width: 52px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: var(--dsw-alias-label-primary);
-  font-weight: 600;
-}
-
-/* Token 轮次折叠/展开按钮 */
-.turnToggle {
-  margin-top: 6px;
-  font-size: 11.5px;
-  color: var(--dsw-alias-label-secondary);
-  background: var(--dsw-alias-bg-layer-2);
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: 6px;
-  padding: 3px 10px;
+.turnBar {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 2px 2px 0 0;
+  background: var(--dsw-alias-brand-primary, #3d7eff);
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
+  opacity: 0.85;
+}
+.turnBar:hover {
+  opacity: 1;
+  outline: 1px solid var(--dsw-alias-border-l3);
+  outline-offset: 1px;
+}
+.turnBarActive {
+  opacity: 1;
+  outline: 2px solid var(--dsw-alias-state-warn-primary);
+  outline-offset: 1px;
+}
+.turnBarsAxis {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
+  margin-top: 3px;
 }
 
-.turnToggle:hover {
-  color: var(--dsw-alias-brand-primary);
-  border-color: var(--dsw-alias-brand-primary);
+/* 输出结构（卡底副信息：最终段/过程段/注入文件） */
+.outputMeta {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--dsw-alias-border-l2);
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* 时间线行：柱联动高亮（R 标签匹配） */
+.roundRowHighlight {
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 14%, transparent) !important;
+  outline: 1px solid var(--dsw-alias-state-warn-primary);
+  outline-offset: -1px;
+}
+
+/* 输入构成图例：次数副值 + 可点击下钻 */
+.profileCount {
+  color: var(--dsw-alias-label-tertiary);
+  font-weight: 500;
+  margin-left: 2px;
+}
+button.profileLegendItem {
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+button.profileLegendItem:hover {
+  background: var(--dsw-alias-bg-layer-2);
 }
 
 /* —— 上下文构成 —— */
@@ -1117,10 +1118,7 @@
 }
 
 /* 无用户消息轮次（工具处理轮）：弱化占位 */
-.turnTextEmpty {
-  color: var(--dsw-alias-label-tertiary);
-  font-style: italic;
-}
+
 
 /* —— 顶部总览大卡（三栏均分，两竖线）—— */
 .topOverview3 {

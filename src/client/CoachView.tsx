@@ -208,6 +208,28 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
   const [loading, setLoading] = useState(true)
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
   const [detail, setDetail] = useState<CoachDetail | null>(null)
+  /** 每轮分布柱联动：高亮下方时间线对应轮（R{n}），4s 后自动消退。 */
+  const [highlightTurn, setHighlightTurn] = useState<number | null>(null)
+  useEffect(() => {
+    if (highlightTurn === null) return
+    const timer = setTimeout(() => setHighlightTurn(null), 4000)
+    return () => clearTimeout(timer)
+  }, [highlightTurn])
+  /** 点击分布柱 → 滚动到时间线卡并高亮 R{turn} 行。 */
+  const jumpToTimelineTurn = (turn: number): void => {
+    setHighlightTurn(turn)
+    const card = document.getElementById('coach-timeline-card')
+    if (card === null) return
+    const rows = card.querySelectorAll<HTMLButtonElement>('[class*=roundRow]')
+    for (const row of rows) {
+      const no = row.querySelector('[class*=roundNo]')
+      if (no !== null && no.textContent === `R${turn}`) {
+        row.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        return
+      }
+    }
+    card.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
   const [agentsZeroOpen, setAgentsZeroOpen] = useState(false)
   const [highlightDim, setHighlightDim] = useState<string | null>(null)
 
@@ -383,85 +405,89 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   </div>
                 )}
           </div>
-        )}
+      )}
       </section>
-      {/* Token 分布 + 上下文构成（资源使用） */}
-      <div className={css.grid2}>
-        <section className={css.card} id="coach-token-card">
-          <CardHead
-            title={t('coach.token.title')}
-            sub={report.token !== null ? t('coach.token.sub', {
-              total: report.token.total.toLocaleString(),
-              input: report.token.input.toLocaleString(),
-              output: report.token.output.toLocaleString(),
-              cache: report.token.cache.toLocaleString(),
-            }) : undefined}
-          />
-          {report.token === null
-            ? <div className={css.muted}>{t('coach.token.unavailable')}</div>
-            : (
-              <>
-                {/* 汇总：输入构成（上移，总分原则） */}
-                {renderTokenProfile(t, report.token.profile)}
-                <div className={css.turnList}>
-                  {(() => {
-                    const turns = report.token.perTurn.slice(0, 5)
-                    const maxTurn = Math.max(1, ...turns.map(turn => turn.total))
-                    return turns.map(turn => (
-                      <div key={turn.turn} className={css.turnRow}>
-                        <span className={css.turnTag}>R{turn.turn}</span>
-                        <span className={`${css.turnText} ${turn.text.length === 0 ? css.turnTextEmpty : ''}`} title={detailActive ? undefined : turn.text}>
-                          {turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}
-                        </span>
-                        <div className={css.barTrack}>
-                          <div
-                            className={`${css.barFill} ${css.barToken}`}
-                            style={{ width: `${Math.max(2, (turn.total / maxTurn) * 100)}%` }}
-                          />
-                        </div>
-                        <span className={css.turnValue}>{turn.total.toLocaleString()}</span>
-                      </div>
-                    ))
-                  })()}
-                  {report.token.perTurn.length > 5 && (
-                    <button className={css.turnToggle} onClick={() => setDetail({ kind: 'token' })}>
-                      {t('coach.token.viewAll', { n: report.token.perTurn.length })} →
-                    </button>
-                  )}
+      {/* Token 与上下文（合并卡：总量汇总 + 每轮分布 + 输入构成双口径） */}
+      <section className={css.card} id="coach-token-card">
+        <CardHead
+          title={t('coach.token.title')}
+          sub={report.token !== null ? t('coach.token.sub', {
+            total: report.token.total.toLocaleString(),
+            input: report.token.input.toLocaleString(),
+            output: report.token.output.toLocaleString(),
+            cache: report.token.cache.toLocaleString(),
+          }) : undefined}
+        />
+        {report.token === null
+          ? <div className={css.muted}>{t('coach.token.unavailable')}</div>
+          : (
+            <>
+              {/* 汇总：每轮 Token 分布（全量柱图，hover 看量，点击联动下方时间线对应轮） */}
+              {report.token.perTurn.length > 0 && (
+                <div className={css.turnBarsWrap}>
+                  <div className={css.tokenProfileTitle}>
+                    <span>{t('coach.token.perTurn.title')}</span>
+                    <span className={css.muted}>{t('coach.token.perTurn.hint')}</span>
+                  </div>
+                  <div className={css.turnBars}>
+                    {(() => {
+                      const turns = report.token.perTurn
+                      const maxTurn = Math.max(1, ...turns.map(turn => turn.total))
+                      return turns.map(turn => (
+                        <button
+                          key={turn.turn}
+                          type="button"
+                          className={`${css.turnBar} ${highlightTurn === turn.turn ? css.turnBarActive : ''}`}
+                          style={{ height: `${Math.max(4, (turn.total / maxTurn) * 100)}%` }}
+                          onClick={() => jumpToTimelineTurn(turn.turn)}
+                          title={`R${turn.turn} · ${turn.total.toLocaleString()} · ${turn.text.length > 0 ? turn.text : t('coach.token.toolTurn')}`}
+                          aria-label={`R${turn.turn} ${turn.total.toLocaleString()}`}
+                        />
+                      ))
+                    })()}
+                  </div>
+                  <div className={css.turnBarsAxis}>
+                    <span>R1</span>
+                    <span>R{report.token.perTurn.length}</span>
+                  </div>
                 </div>
-              </>
-            )}
-        </section>
-
-
-        <section className={css.card}>
-          <CardHead
-            title={t('coach.context.title')}
-            sub={report.contextProfile !== null ? t('coach.context.sub', {
-              system: report.contextProfile.systemItems,
-              user: report.contextProfile.userItems,
-              plugin: report.contextProfile.pluginItems,
-              delegations: report.contextProfile.delegations,
-              tools: scope.toolCalls,
-              inject: report.contextProfile.injectFiles,
-            }) : undefined}
-          />
-          {report.contextProfile === null
-            ? <div className={css.muted}>{t('coach.stats.none')}</div>
-            : (
-              <div className={css.contextGrid}>
-                <ContextStat t={t} label={t('coach.context.systemItems')} value={report.contextProfile.systemItems} onClick={() => scrollToCard('coach-token-card')} />
-                <ContextStat t={t} label={t('coach.context.userItems')} value={report.contextProfile.userItems} onClick={() => setDetail({ kind: 'context', target: 'user' })} />
-                <ContextStat t={t} label={t('coach.context.delegations')} value={report.contextProfile.delegations} onClick={() => setDetail({ kind: 'context', target: 'delegation' })} />
-                <ContextStat t={t} label={t('coach.context.toolCalls')} value={scope.toolCalls} onClick={() => scrollToCard('coach-timeline-card')} />
-                <ContextStat t={t} label={t('coach.context.pluginItems')} value={report.contextProfile.pluginItems} onClick={() => setDetail({ kind: 'context', target: 'plugin' })} />
-                <ContextStat t={t} label={t('coach.context.injectFiles')} value={report.contextProfile.injectFiles} onClick={() => setDetail({ kind: 'context', target: 'inject' })} />
-                <ContextStat t={t} label={t('coach.context.finalSegments')} value={report.contextProfile.finalSegments} onClick={() => setDetail({ kind: 'context', target: 'final' })} />
-                <ContextStat t={t} label={t('coach.context.processSegments')} value={report.contextProfile.processSegments} onClick={() => setDetail({ kind: 'context', target: 'process' })} />
-              </div>
-            )}
-        </section>
-      </div>
+              )}
+              {/* 输入构成（字符量 + 次数 双条，同色） */}
+              {renderTokenProfile(
+                t,
+                report.token.profile,
+                report.contextProfile !== null
+                  ? {
+                      system: report.contextProfile.systemItems,
+                      user: report.contextProfile.userItems,
+                      delegation: report.contextProfile.delegations,
+                      tools: scope.toolCalls,
+                      plugin: report.contextProfile.pluginItems,
+                    }
+                  : null,
+                (key) => {
+                  switch (key) {
+                    case 'user': setDetail({ kind: 'context', target: 'user' }); break
+                    case 'delegation': setDetail({ kind: 'context', target: 'delegation' }); break
+                    case 'tools': scrollToCard('coach-timeline-card'); break
+                    case 'plugin': setDetail({ kind: 'context', target: 'plugin' }); break
+                    default: break
+                  }
+                },
+              )}
+              {/* 输出结构（副信息） */}
+              {report.contextProfile !== null && (
+                <div className={css.outputMeta}>
+                  {t('coach.token.outputMeta', {
+                    final: report.contextProfile.finalSegments,
+                    process: report.contextProfile.processSegments,
+                    inject: report.contextProfile.injectFiles,
+                  })}
+                </div>
+              )}
+            </>
+          )}
+      </section>
 
       {/* 子智能体 + Skill 调用（被调用的实体，关联并排） */}
       <div className={css.grid2}>
@@ -648,23 +674,26 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           ? <div className={css.muted}>{t('coach.timeline.noRounds')}</div>
           : (
             <div className={css.timelineFull}>
-              {timeline.rounds.map((round, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className={css.roundRow}
-                  onClick={() => setDetail({ kind: 'timelineTurn', index })}
-                  title={t('coach.timeline.openTurn')}
-                >
-                  <span className={css.roundNo}>{round.kind === 'initial' ? '★' : `R${index + 1}`}</span>
-                  <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
-                    {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
-                  </span>
-                  <span className={css.roundText}>{round.userText}</span>
-                  {roundTagsOf(round, t, 3)}
-                  <span className={css.roundArrow}>{'›'}</span>
-                </button>
-              ))}
+              {timeline.rounds.map((round, index) => {
+                const roundNo = round.kind === 'initial' ? '★' : `R${index + 1}`
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`${css.roundRow} ${highlightTurn !== null && roundNo === `R${highlightTurn}` ? css.roundRowHighlight : ''}`}
+                    onClick={() => setDetail({ kind: 'timelineTurn', index })}
+                    title={t('coach.timeline.openTurn')}
+                  >
+                    <span className={css.roundNo}>{roundNo}</span>
+                    <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
+                      {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
+                    </span>
+                    <span className={css.roundText}>{round.userText}</span>
+                    {roundTagsOf(round, t, 3)}
+                    <span className={css.roundArrow}>{'›'}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
       </section>
@@ -1181,44 +1210,27 @@ function Stat({ label, value, danger = false, onClick }: {
   )
 }
 
-function ContextStat({ label, value, onClick, t }: {
-  label: string
-  value: number
-  onClick?: () => void
-  t: Translate
-}): JSX.Element {
-  const disabled = value === 0
-  return (
-    <button
-      className={css.contextStat}
-      onClick={disabled ? undefined : onClick}
-      type="button"
-      disabled={disabled}
-      title={disabled ? t('coach.context.zeroHint') : t('coach.context.clickHint')}
-    >
-      <b>{value}</b>
-      <span>{label}</span>
-      {!disabled && <span className={css.contextStatArrow}>{'›'}</span>}
-    </button>
-  )
-}
-
-/** 输入构成（字符量估算）：系统提示词 / 用户提示 / 委派指令 / 工具调用 / 上下文注入。
- *  与上下文构成五对象同名对齐。 */
+/** 输入构成（双条）：上条=字符量、下条=次数（条数/份数），对象同色。
+ *  五对象：系统提示词 / 用户提示 / 委派指令 / 工具调用 / 上下文注入。
+ *  图例数字可点击下钻：user/delegation → 对应抽屉；tools → 时间线卡；plugin → 注入抽屉。 */
 function renderTokenProfile(
   t: Translate,
   profile: { system: number; user: number; tools: number; plugin: number; delegation: number } | null,
+  counts: { system: number; user: number; delegation: number; tools: number; plugin: number } | null,
+  onDrill?: (key: string) => void,
 ): JSX.Element | null {
   if (profile === null) return null
   const parts = [
-    { key: 'system', value: profile.system },
-    { key: 'user', value: profile.user },
-    { key: 'delegation', value: profile.delegation },
-    { key: 'tools', value: profile.tools },
-    { key: 'plugin', value: profile.plugin },
+    { key: 'system', value: profile.system, count: counts?.system ?? 0 },
+    { key: 'user', value: profile.user, count: counts?.user ?? 0 },
+    { key: 'delegation', value: profile.delegation, count: counts?.delegation ?? 0 },
+    { key: 'tools', value: profile.tools, count: counts?.tools ?? 0 },
+    { key: 'plugin', value: profile.plugin, count: counts?.plugin ?? 0 },
   ]
-  const total = parts.reduce((sum, part) => sum + part.value, 0)
-  if (total <= 0) return null
+  const visible = parts.filter(part => part.value > 0 || part.count > 0)
+  const totalChars = parts.reduce((sum, part) => sum + part.value, 0)
+  const totalCounts = parts.reduce((sum, part) => sum + part.count, 0)
+  if (totalChars <= 0 && totalCounts <= 0) return null
   const labelOf = (key: string): string => {
     switch (key) {
       case 'system': return t('coach.token.profile.system')
@@ -1228,6 +1240,14 @@ function renderTokenProfile(
       default: return t('coach.token.profile.plugin')
     }
   }
+  const drillable = (key: string): boolean => key === 'user' || key === 'delegation' || key === 'tools' || key === 'plugin'
+  const unitOf = (key: string): string => {
+    switch (key) {
+      case 'system': return t('coach.token.profile.unitItems')
+      case 'tools': return t('coach.token.profile.unitCalls')
+      default: return t('coach.token.profile.unitMessages')
+    }
+  }
   return (
     <div className={css.tokenProfile}>
       <div className={css.tokenProfileTitle}>
@@ -1235,27 +1255,55 @@ function renderTokenProfile(
         <span className={css.muted}>{t('coach.token.profile.estimate')}</span>
       </div>
       <div className={css.profileBar}>
-        {parts
+        {visible
           .filter(part => part.value > 0)
           .map(part => (
             <div
               key={part.key}
               className={`${css.profileSeg} ${css[`profileSeg_${part.key}`]}`}
-              style={{ width: `${(part.value / total) * 100}%` }}
+              style={{ width: `${(part.value / totalChars) * 100}%` }}
               title={`${labelOf(part.key)} · ${part.value.toLocaleString()}`}
             />
           ))}
       </div>
+      {totalCounts > 0 && (
+        <div className={css.profileBar}>
+          {visible
+            .filter(part => part.count > 0)
+            .map(part => (
+              <div
+                key={part.key}
+                className={`${css.profileSeg} ${css[`profileSeg_${part.key}`]}`}
+                style={{ width: `${(part.count / totalCounts) * 100}%` }}
+                title={`${labelOf(part.key)} · ${part.count}${unitOf(part.key)}`}
+              />
+            ))}
+        </div>
+      )}
       <div className={css.profileLegend}>
-        {parts
-          .filter(part => part.value > 0)
-          .map(part => (
-            <span key={part.key} className={css.profileLegendItem}>
+        {visible.map(part => {
+          const inner = (
+            <>
               <i className={`${css.profileDot} ${css[`profileDot_${part.key}`]}`} />
               {labelOf(part.key)}
               <b>{part.value.toLocaleString()}</b>
-            </span>
-          ))}
+              <span className={css.profileCount}>{part.count}{unitOf(part.key)}</span>
+            </>
+          )
+          return drillable(part.key) && onDrill !== undefined
+            ? (
+              <button
+                key={part.key}
+                type="button"
+                className={css.profileLegendItem}
+                onClick={() => onDrill(part.key)}
+                title={t('coach.context.clickHint')}
+              >
+                {inner}
+              </button>
+            )
+            : <span key={part.key} className={css.profileLegendItem}>{inner}</span>
+        })}
       </div>
     </div>
   )
