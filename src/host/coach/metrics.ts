@@ -64,7 +64,7 @@ export interface CoachScan {
   /** Skill 调用统计（tool/call name='skill' 聚合）。 */
   skills: CoachSkillStats[]
   /** 上下文构成计数 + v0.2c 下钻明细（轻量投影，不做预算截断判定）。 */
-  context: Pick<CoachContextProfile, 'userItems' | 'pluginItems' | 'injectFiles' | 'finalSegments' | 'processSegments' | 'userTexts' | 'pluginSummaries' | 'delegationTexts' | 'injectPaths'>
+  context: Pick<CoachContextProfile, 'userItems' | 'pluginItems' | 'systemItems' | 'injectFiles' | 'finalSegments' | 'processSegments' | 'userTexts' | 'pluginSummaries' | 'delegationTexts' | 'injectPaths'>
 }
 
 interface CoachCall {
@@ -203,8 +203,8 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   const tokenByTurn = new Map<number, { input: number; output: number; cache: number }>()
   /** 各轮次首个用户主动消息文本（turn → 摘要，Token 分布小标题用）。 */
   const turnTextByTurn = new Map<number, string>()
-  /** 输入构成估算（字符量）：system/user/tools/plugin。 */
-  const profileChars = { system: 0, user: 0, tools: 0, plugin: 0 }
+  /** 输入构成估算（字符量）：system/user/tools/plugin/delegation。 */
+  const profileChars = { system: 0, user: 0, tools: 0, plugin: 0, delegation: 0 }
   /** Skill 调用（name → {calls, failed}）。 */
   const skillByCall = new Map<string, { calls: number; failed: number }>()
   /** 待配对的 skill 调用（callId → skill 名），result 判定成败。 */
@@ -215,6 +215,8 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
   let contextPluginItems = 0
   let injectFiles = 0
   let nonEmptyTexts = 0
+  /** 系统提示词份数：request/header.system 内容去重（通常 1 份模板）。 */
+  const systemPromptVersions = new Set<string>()
   // v0.2c 下钻明细收集
   const userTexts: string[] = []
   const pluginSummaries: string[] = []
@@ -317,9 +319,10 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
           }
           pluginSummaries.push(clipDetailText(texts.filter(t => t.length > 0).join(' ') || form || ''))
         } else if (sourceKind === 'agent-instructions' || sourceKind === 'team-message') {
-          // C02：委派文本同时采 agent-instructions 与 team-message（团队消息同为系统委派）
+          // C02：委派文本同时采 agent-instructions 与 team-message（团队消息同为系统委派）。
+          // 与「系统提示词」拆分统计，保证 Token/上下文两侧对象一致（委派指令独立成项）。
           const text = extractText(data?.['content']).trim()
-          profileChars.system += text.length
+          profileChars.delegation += text.length
           if (text.length > 0) delegationTexts.push(clipDetailText(text))
         }
       }
@@ -328,7 +331,10 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
       const system = (header !== null && typeof header === 'object')
         ? textOf((header as Record<string, unknown>)['system'])
         : undefined
-      if (system !== undefined) profileChars.system += system.length
+      if (system !== undefined) {
+        profileChars.system += system.length
+        systemPromptVersions.add(system)
+      }
     } else if (type === 'assistant/message') {
       assistantSteps += 1
       const message = data?.['message']
@@ -456,6 +462,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
         user: profileChars.user,
         tools: profileChars.tools,
         plugin: profileChars.plugin,
+        delegation: profileChars.delegation,
       },
     }
   }
@@ -509,6 +516,7 @@ export function scanCoachEvents(events: readonly AggregatorEvent[], cwd: string 
     context: {
       userItems: contextUserItems,
       pluginItems: contextPluginItems,
+      systemItems: systemPromptVersions.size,
       injectFiles,
       finalSegments,
       processSegments: Math.max(0, nonEmptyTexts - finalSegments),

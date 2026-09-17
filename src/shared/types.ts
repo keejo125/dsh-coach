@@ -536,18 +536,22 @@ export interface CoachTokenStats {
   perTurn: Array<{ turn: number; input: number; output: number; total: number; text: string }>
   /**
    * 输入构成估算（按事件文本字符量，非精确 token 拆解）：
-   * system=request/header.system + agent-instructions；user=用户主动消息；
-   * tools=工具调用参数与结果；plugin=系统注入。仅用于展示输入压力构成。
+   * system=request/header.system（纯系统提示词）；user=用户主动消息；
+   * tools=工具调用参数与结果；plugin=上下文注入（系统注入）；
+   * delegation=委派指令（agent-instructions/team-message）。
+   * 与上下文构成五对象同名同序：系统提示词/用户提示/委派指令/工具调用/上下文注入。
    */
-  profile: { system: number; user: number; tools: number; plugin: number } | null
+  profile: { system: number; user: number; tools: number; plugin: number; delegation: number } | null
 }
 
 /** 上下文构成投影（v0.2b）：复用 Context 聚合口径的轻量版（不做预算截断判定）。 */
 export interface CoachContextProfile {
   /** 用户主动输入条数（source.kind === 'user'）。 */
   userItems: number
-  /** 系统注入条数（source.kind === 'plugin'）。 */
+  /** 上下文注入条数（source.kind === 'plugin'）。 */
   pluginItems: number
+  /** 系统提示词份数（request/header.system 内容去重，通常 1）。 */
+  systemItems: number
   /** 直接子会话数。 */
   delegations: number
   /** 系统注入条目中提取的唯一文件路径数（尽力，无则 0 不表示「无注入文件」）。 */

@@ -336,7 +336,8 @@ describe('Token 输入构成与 Skill 调用（v0.2b+）', () => {
     expect(report.token).not.toBeNull()
     const p = report.token!.profile
     expect(p).not.toBeNull()
-    expect(p!.system).toBeGreaterThan(0) // request/header.system + agent-instructions
+    expect(p!.system).toBeGreaterThan(0) // request/header.system（纯系统提示词）
+    expect(p!.delegation).toBe('指令注入'.length) // agent-instructions 独立成项，不再混入 system
     expect(p!.user).toBe('用户需求描述'.length)
     expect(p!.tools).toBeGreaterThan(0) // tool arguments + result
     expect(p!.plugin).toBe('系统注入消息'.length * 2) // notice：message + summary 双文本

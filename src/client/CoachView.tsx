@@ -387,7 +387,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
       </section>
       {/* Token 分布 + 上下文构成（资源使用） */}
       <div className={css.grid2}>
-        <section className={css.card}>
+        <section className={css.card} id="coach-token-card">
           <CardHead
             title={t('coach.token.title')}
             sub={report.token !== null ? t('coach.token.sub', {
@@ -438,9 +438,11 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           <CardHead
             title={t('coach.context.title')}
             sub={report.contextProfile !== null ? t('coach.context.sub', {
+              system: report.contextProfile.systemItems,
               user: report.contextProfile.userItems,
               plugin: report.contextProfile.pluginItems,
               delegations: report.contextProfile.delegations,
+              tools: scope.toolCalls,
               inject: report.contextProfile.injectFiles,
             }) : undefined}
           />
@@ -448,9 +450,11 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
             ? <div className={css.muted}>{t('coach.stats.none')}</div>
             : (
               <div className={css.contextGrid}>
+                <ContextStat t={t} label={t('coach.context.systemItems')} value={report.contextProfile.systemItems} onClick={() => scrollToCard('coach-token-card')} />
                 <ContextStat t={t} label={t('coach.context.userItems')} value={report.contextProfile.userItems} onClick={() => setDetail({ kind: 'context', target: 'user' })} />
-                <ContextStat t={t} label={t('coach.context.pluginItems')} value={report.contextProfile.pluginItems} onClick={() => setDetail({ kind: 'context', target: 'plugin' })} />
                 <ContextStat t={t} label={t('coach.context.delegations')} value={report.contextProfile.delegations} onClick={() => setDetail({ kind: 'context', target: 'delegation' })} />
+                <ContextStat t={t} label={t('coach.context.toolCalls')} value={scope.toolCalls} onClick={() => scrollToCard('coach-timeline-card')} />
+                <ContextStat t={t} label={t('coach.context.pluginItems')} value={report.contextProfile.pluginItems} onClick={() => setDetail({ kind: 'context', target: 'plugin' })} />
                 <ContextStat t={t} label={t('coach.context.injectFiles')} value={report.contextProfile.injectFiles} onClick={() => setDetail({ kind: 'context', target: 'inject' })} />
                 <ContextStat t={t} label={t('coach.context.finalSegments')} value={report.contextProfile.finalSegments} onClick={() => setDetail({ kind: 'context', target: 'final' })} />
                 <ContextStat t={t} label={t('coach.context.processSegments')} value={report.contextProfile.processSegments} onClick={() => setDetail({ kind: 'context', target: 'process' })} />
@@ -1199,15 +1203,17 @@ function ContextStat({ label, value, onClick, t }: {
   )
 }
 
-/** 输入构成（字符量估算）：系统提示词 / 用户提示词 / 工具调用与结果 / 上下文注入。 */
+/** 输入构成（字符量估算）：系统提示词 / 用户提示 / 委派指令 / 工具调用 / 上下文注入。
+ *  与上下文构成五对象同名对齐。 */
 function renderTokenProfile(
   t: Translate,
-  profile: { system: number; user: number; tools: number; plugin: number } | null,
+  profile: { system: number; user: number; tools: number; plugin: number; delegation: number } | null,
 ): JSX.Element | null {
   if (profile === null) return null
   const parts = [
     { key: 'system', value: profile.system },
     { key: 'user', value: profile.user },
+    { key: 'delegation', value: profile.delegation },
     { key: 'tools', value: profile.tools },
     { key: 'plugin', value: profile.plugin },
   ]
@@ -1217,6 +1223,7 @@ function renderTokenProfile(
     switch (key) {
       case 'system': return t('coach.token.profile.system')
       case 'user': return t('coach.token.profile.user')
+      case 'delegation': return t('coach.token.profile.delegation')
       case 'tools': return t('coach.token.profile.tools')
       default: return t('coach.token.profile.plugin')
     }

@@ -74,6 +74,7 @@ export async function buildCoachReport(engine: AggregatorEngine, sessionId: stri
   const contextProfile = {
     userItems: scan.context.userItems,
     pluginItems: scan.context.pluginItems,
+    systemItems: scan.context.systemItems,
     delegations,
     injectFiles: scan.context.injectFiles,
     totalFiles: scan.refCounts.size,

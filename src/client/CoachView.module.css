@@ -954,6 +954,7 @@
 .profileSeg_user { background: var(--dsw-alias-state-success-primary); }
 .profileSeg_tools { background: var(--dsw-alias-state-warn-primary); }
 .profileSeg_plugin { background: var(--dsw-alias-label-tertiary); }
+.profileSeg_delegation { background: var(--dsw-alias-state-error-primary); }
 
 .profileLegend {
   display: grid;
