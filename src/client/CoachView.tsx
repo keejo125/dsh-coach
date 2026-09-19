@@ -902,7 +902,18 @@ function detailDrawerSections(
         round.actions
           .filter(action => action.name === detail.name)
           .map(action => ({ round: index + 1, failed: action.failed, retried: action.retried, path: action.path })))
-      const sections: CoachDetailSection[] = []
+      const sections: CoachDetailSection[] = [
+        {
+          title: t('coach.skills.drawerStats'),
+          items: [
+            { text: `${t('coach.skills.calls')} ${skill.calls}`, noIndex: true },
+            { text: `${t('coach.skills.ok')} ${Math.max(0, skill.calls - skill.failed)}`, tone: 'ok', noIndex: true },
+            skill.failed > 0
+              ? { text: `${t('coach.skills.failed')} ${skill.failed}`, tone: 'error', noIndex: true }
+              : { text: `${t('coach.skills.failed')} 0`, noIndex: true },
+          ],
+        },
+      ]
       if (calls.length > 0) {
         sections.push({
           title: t('coach.skills.drawerCalls', { n: calls.length }),
@@ -912,16 +923,6 @@ function detailDrawerSections(
           })),
         })
       }
-      sections.push({
-        title: t('coach.skills.drawerStats'),
-        items: [
-          { text: `${t('coach.skills.calls')} ${skill.calls}`, noIndex: true },
-          { text: `${t('coach.skills.ok')} ${Math.max(0, skill.calls - skill.failed)}`, tone: 'ok', noIndex: true },
-          skill.failed > 0
-            ? { text: `${t('coach.skills.failed')} ${skill.failed}`, tone: 'error', noIndex: true }
-            : { text: `${t('coach.skills.failed')} 0`, noIndex: true },
-        ],
-      })
       return sections
     }
     case 'timeline': return []
