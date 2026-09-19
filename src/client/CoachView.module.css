@@ -901,9 +901,7 @@ button.profileLegendItem:hover {
   flex: none;
   font-size: 11px;
   line-height: 1.4;
-  min-width: 80px;
-  text-align: center;
-  justify-content: center;
+  padding: 1px 8px;
   white-space: nowrap;
   background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #2e7d32) 14%, transparent);
   color: var(--dsw-alias-state-success-primary, #1a5a2e);
@@ -916,9 +914,7 @@ button.profileLegendItem:hover {
   flex: none;
   font-size: 11px;
   line-height: 1.4;
-  min-width: 80px;
-  text-align: center;
-  justify-content: center;
+  padding: 1px 8px;
   white-space: nowrap;
   background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 14%, transparent);
   color: var(--dsw-alias-state-warn-primary, #7a2d00);
