@@ -239,3 +239,8 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* 指标行：无序号、不可点、左对齐自然排布 */
+.itemMetric {
+  justify-content: flex-start;
+}

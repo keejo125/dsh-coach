@@ -186,7 +186,7 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.skills.title': 'Skill calls',
   'coach.skills.sub': '{calls} calls · {failed} failed',
   'coach.skills.calls': 'calls',
-  'coach.skills.ok': 'coach.skills.ok',
+  'coach.skills.ok': 'ok',
   'coach.skills.failed': 'failed',
   'coach.skills.none': 'No skill invoked in this session',
   'coach.skills.recent': 'Recent calls',

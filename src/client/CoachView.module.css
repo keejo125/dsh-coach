@@ -1303,10 +1303,11 @@ button.profileLegendItem:hover {
   gap: 8px;
   flex-wrap: nowrap;
   width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.15));
-  border-radius: 8px;
-  background: var(--dsw-alias-bg-layer-1, rgba(255, 255, 255, 0.04));
+  padding: 9px 11px;
+  margin-bottom: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1);
   font: inherit;
   text-align: left;
   cursor: pointer;

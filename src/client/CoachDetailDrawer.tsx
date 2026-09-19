@@ -4,7 +4,7 @@
  *  - bars：条形进度（数值占比，如 Token 全量轮次）
  *  - items：文本条目（带序号徽章、tone 徽章；可带 path 点击打开文件正文）
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { IconCloseOutline16 } from './icons/index.tsx'
 import type { Translate } from './components/AgentBadge.tsx'
 import css from './CoachDetailDrawer.module.css'
@@ -14,6 +14,8 @@ export interface CoachDetailItem {
   tone?: 'ok' | 'error' | 'warn'
   /** 工作区相对路径：存在时条目可点击打开文件正文（浮层文件抽屉）。 */
   path?: string
+  /** 指标类条目：不显示序号、不可点击。 */
+  noIndex?: boolean
 }
 
 export interface CoachDetailBar {
@@ -58,8 +60,7 @@ function ItemRow({
   index: number
   onSelectItem?: (path: string) => void
 }): JSX.Element {
-  const [expanded, setExpanded] = useState(false)
-  const clickable = entry.path !== undefined && onSelectItem !== undefined
+  const clickable = entry.path !== undefined && onSelectItem !== undefined && entry.noIndex !== true
   if (clickable) {
     return (
       <button
@@ -74,17 +75,12 @@ function ItemRow({
     )
   }
   return (
-    <button
-      type="button"
-      className={`${css.item} ${toneClass(entry.tone)}`}
-      onClick={() => { setExpanded(v => !v) }}
+    <div
+      className={`${css.item} ${toneClass(entry.tone)} ${entry.noIndex === true ? css.itemMetric : ''}`}
     >
-      <span className={css.itemIndex}>{index + 1}</span>
-      <span className={`${css.itemText} ${expanded ? css.itemTextOpen : ''}`} title={expanded ? undefined : entry.text}>
-        {entry.text}
-      </span>
-      {!expanded && <span className={css.itemMore}>{'›'}</span>}
-    </button>
+      {entry.noIndex === true ? null : <span className={css.itemIndex}>{index + 1}</span>}
+      <span className={css.itemText}>{entry.text}</span>
+    </div>
   )
 }
 

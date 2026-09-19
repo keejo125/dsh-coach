@@ -643,8 +643,8 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                   title={t('coach.skills.viewDetail')}
                 >
                   <span className={css.skillName} title={skill.name}>{skill.name}</span>
-                  <span className={css.skillCalls}>{t('coach.skills.calls')} <b>{stats.calls}</b></span>
-                  <span className={css.skillOk}>{t('coach.skills.ok')} <b>{Math.max(0, stats.calls - stats.failed)}</b></span>
+                  <span className={css.skillCalls}>{t('coach.skills.calls')} {stats.calls}</span>
+                  <span className={css.skillOk}>{t('coach.skills.ok')} {Math.max(0, stats.calls - stats.failed)}</span>
                   {stats.failed > 0 && <span className={css.skillFailed}>{t('coach.skills.failed')} {stats.failed}</span>}
                 </button>
                 )
@@ -816,7 +816,9 @@ function SkillRecentCalls({ timeline, skills, t, onOpen }: {
                 <span className={css.skillRecentNo}>R{call.round}</span>
                 <span className={css.skillRecentName}>{call.name}</span>
                 <span className={css.skillRecentPath} title={call.path ?? undefined}>{call.path}</span>
-                {call.failed && <span className={css.tagError}>{t('coach.skills.failed')}</span>}
+                {call.failed
+                  ? <span className={css.tagError}>{t('coach.skills.failed')}</span>
+                  : <span className={css.tagOk}>{t('coach.skills.ok')}</span>}
               </button>
             ))}
           </div>
@@ -868,16 +870,16 @@ function detailDrawerSections(
       const agent = report.agents.find(candidate => candidate.sessionId === detail.sessionId)
       if (agent === undefined) return []
       const sections: CoachDetailSection[] = [
-        { title: t('coach.agents.drawerTask'), items: [agent.task ?? agent.label] },
+        { title: t('coach.agents.drawerTask'), items: [{ text: agent.task ?? agent.label, noIndex: true }] },
         {
           title: t('coach.agents.drawerMetrics'),
           items: [
-            `${t('coach.agents.readFiles', { n: agent.readFiles })}`,
-            `${t('coach.agents.toolCalls', { n: agent.toolCalls })}`,
+            { text: `${t('coach.agents.readFiles', { n: agent.readFiles })}`, noIndex: true },
+            { text: `${t('coach.agents.toolCalls', { n: agent.toolCalls })}`, noIndex: true },
             agent.failedToolCalls > 0
-              ? { text: t('coach.agents.failures', { n: agent.failedToolCalls }), tone: 'error' }
-              : `${t('coach.agents.failures', { n: 0 })}`,
-            `${t('coach.agents.writtenFiles', { n: agent.writtenFiles })}`,
+              ? { text: t('coach.agents.failures', { n: agent.failedToolCalls }), tone: 'error', noIndex: true }
+              : { text: `${t('coach.agents.failures', { n: 0 })}`, noIndex: true },
+            { text: `${t('coach.agents.writtenFiles', { n: agent.writtenFiles })}`, noIndex: true },
           ],
         },
       ]
@@ -885,7 +887,7 @@ function detailDrawerSections(
         sections.push({
           title: t('coach.agents.drawerFiles', { n: agent.files.length }),
           items: agent.files.map(file => ({
-            text: `${file.path} · ${file.op === 'create' ? t('coach.timeline.artifact') : t('coach.timeline.updated')}${file.opCount > 1 ? ` ×${file.opCount}` : ''}`,
+            text: `${file.path}${file.opCount > 1 ? ` ×${file.opCount}` : ''}`,
             tone: file.op === 'create' ? 'ok' : 'warn',
             path: file.path,
           })),
