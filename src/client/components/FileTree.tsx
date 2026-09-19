@@ -98,7 +98,7 @@ export function FileTree({ nodes, t, agentsMeta, injected = false, onSelectFile 
               <span className={css.unusedBadge} title={t('coach.references.unusedHint') ?? '本轮读取但未用于任何产物'}>{t('coach.references.unusedTag') ?? '未用'}</span>
             ) : null}
             {node.viewCount !== undefined && node.viewCount > 0 ? (
-              <span className={css.viewBadge} title={t('column.reference')}>{t('badge.views', { n: node.viewCount })}</span>
+              <span className={css.viewBadge} data-tooltip={t('column.reference')}>{t('badge.views', { n: node.viewCount })}</span>
             ) : null}
             {(node.agents ?? []).map(agentKey => (
               <AgentBadge key={agentKey} badge={agentsMeta.get(agentKey)} t={t} />
