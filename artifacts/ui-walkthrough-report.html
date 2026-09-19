@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dsh-coach 复盘页 UI 走查报告</title>
+<style>
+  :root {
+    --primary: #4176e6;
+    --success: #22c55e;
+    --error: #ec1313;
+    --warning: #f59e0b;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f1115;
+    --text-secondary: #64748b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 24px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
+  h3 { font-size: 16px; font-weight: 600; margin: 20px 0 12px; }
+  .meta { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+  .meta-item { display: inline-block; margin-right: 24px; }
+  .meta-label { font-weight: 500; }
+
+  .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0; }
+  .summary-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .summary-card .num { font-size: 32px; font-weight: 700; line-height: 1.2; }
+  .summary-card .label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+  .num-pass { color: var(--success); }
+  .num-warn { color: var(--warning); }
+  .num-fail { color: var(--error); }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  th { background: #f1f5f9; text-align: left; padding: 12px 16px; font-weight: 600; font-size: 14px; border-bottom: 2px solid var(--border); }
+  td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 500;
+  }
+  .badge-pass { background: rgba(34,197,94,0.12); color: #16a34a; }
+  .badge-warn { background: rgba(245,158,11,0.14); color: #d97706; }
+  .badge-fail { background: rgba(236,19,19,0.1); color: #dc2626; }
+
+  .issue {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .issue.severity-high { border-left: 4px solid var(--error); }
+  .issue.severity-mid { border-left: 4px solid var(--warning); }
+  .issue.severity-low { border-left: 4px solid var(--primary); }
+  .issue-title { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+  .issue-body { font-size: 14px; color: #334155; }
+  .issue-screenshot { margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .issue-screenshot img { width: 100%; display: block; }
+  .issue-screenshot .caption { padding: 8px 12px; background: #f8fafc; font-size: 12px; color: var(--text-secondary); }
+
+  .screenshot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .screenshot-item { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--card); }
+  .screenshot-item img { width: 100%; display: block; }
+  .screenshot-item .caption { padding: 10px 14px; font-size: 13px; color: var(--text-secondary); border-top: 1px solid var(--border); }
+
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; }
+  .note { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; font-size: 14px; margin: 16px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>dsh-coach 插件复盘页 UI 走查报告</h1>
+<div class="meta">
+  <span class="meta-item"><span class="meta-label">走查对象：</span>复盘 Tab · 会话 sid=session-068f8dac-8ffb-4b3a-b9c5-3fb8872b3840</span><br>
+  <span class="meta-item"><span class="meta-label">视口尺寸：</span>750×682（半屏）；1280×960（全屏受限，见说明）</span>
+  <span class="meta-item"><span class="meta-label">走查日期：</span>2026-09-19</span>
+</div>
+
+<div class="note">
+  <strong>关于全屏视口：</strong>当前走查通过豆包内置浏览器进行，视口被限制为 750×682，无法调整到 1280×960。全屏走查以 DOM 计算样式与半屏布局推断为主，实际 1280px 表现建议在桌面浏览器中补充验证。
+</div>
+
+<h2>概述</h2>
+<p>本次走查覆盖 dsh-coach 复盘页的全部核心模块：会话质量分、六维雷达、本场统计、Token 与上下文（柱状图+输入构成）、子智能体、Skill 调用、引用分析、产物清单、交互时间线，以及 4 类抽屉（子智能体、Skill、上下文构成、时间线）。</p>
+
+<div class="summary-cards">
+  <div class="summary-card">
+    <div class="num num-pass">6</div>
+    <div class="label">符合 ✅</div>
+  </div>
+  <div class="summary-card">
+    <div class="num num-warn">3</div>
+    <div class="label">部分符合 ⚠️</div>
+  </div>
+  <div class="summary-card">
+    <div class="num num-fail">1</div>
+    <div class="label">不符合 ❌</div>
+  </div>
+  <div class="summary-card">
+    <div class="num">10</div>
+    <div class="label">总检查项</div>
+  </div>
+</div>
+
+<h2>逐条准则检查结果</h2>
+<table>
+  <thead>
+    <tr>
+      <th style="width:40px">#</th>
+      <th style="width:140px">准则</th>
+      <th style="width:70px">状态</th>
+      <th>说明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>徽章统一</td>
+      <td><span class="badge badge-warn">⚠️ 部分符合</span></td>
+      <td>大部分徽章为 11px、999px 胶囊形、语义色透明底，符合规范。但存在以下不一致：<br>
+        • <code>tagOk</code> 与 <code>tagError</code> padding 略有差异（0px 7px vs 1px 8px）<br>
+        • <code>tagMore</code>（+1）字号为 12px，与其他徽章 11px 不统一<br>
+        • 文件树徽章 padding 为 1px 7px，与 Skill 区徽章 1px 8px 有 1px 差异</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>数字+量词</td>
+      <td><span class="badge badge-pass">✅ 符合</span></td>
+      <td>量词使用统一（条/字/次/文件/段/个/轮），副标题均用「·」分隔。如：<br>
+        • <code>读 0 文件 · 工具 1 次 · 有最终答复 · 产物 1 文件</code><br>
+        • <code>总量 88,956 · 累计输入 3,508,961 · 输出 102,529 · 缓存 87,552</code><br>
+        • <code>派生 11 · 可读 9</code></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>抽屉结构</td>
+      <td><span class="badge badge-pass">✅ 符合</span></td>
+      <td>子智能体抽屉：指标在上（读 0 文件 / 工具 1 次 / 失败 0 / 产物 1 文件，纯文字无序号），明细在下（<code>1 timer.html</code>，有序号+绿色色条）。<br>
+        Skill 抽屉：统计在上（调用 1 / 成功 0 / 失败 1），调用记录在下（1/2/3 序号 + 红/绿色条）。结构正确。</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>卡片等高</td>
+      <td><span class="badge badge-pass">✅ 符合</span></td>
+      <td>并排卡片高度一致：子智能体与 Skill 调用卡片均为 368px 高（750px 视口下）；引用分析与产物清单均为 448px 高。stretch 对齐正常。</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>边框规范</td>
+      <td><span class="badge badge-warn">⚠️ 部分符合</span></td>
+      <td>时间线行（<code>bhhTdW_roundRow</code>）与子智能体行（<code>bhhTdW_agentRow</code>）borderRadius 均为 10px、margin 均为 0 0 8px，样式一致。<br>
+        但 border 为 <code>1px solid rgba(0,0,0,0.1)</code>，而非预期的 <code>border-l2（2px）</code>。边框偏细，视觉层次感略弱。</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>状态徽章</td>
+      <td><span class="badge badge-pass">✅ 符合</span></td>
+      <td>时间线中所有状态徽章（初始任务/追问/纠错/干预）均固定 56px 宽度、text-align: center，居中对齐。<br>
+        补充徽章（引用 N / 产物 N / +1）为自适应宽度，左对齐，符合预期。</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>配色</td>
+      <td><span class="badge badge-pass">✅ 符合</span></td>
+      <td>主色：<code>rgb(65, 118, 230)</code> = #4176e6（Token 柱状图柱子）✅<br>
+        成功：绿色 rgb(34, 197, 94) ✅<br>
+        失败：红色 rgb(236, 19, 19) ✅<br>
+        未用/警告：橙色 rgb(245, 158, 11) ✅</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>响应式</td>
+      <td><span class="badge badge-fail">❌ 不符合</span></td>
+      <td><strong>box-sizing 为 <code>content-box</code></strong>（html 与 body 均为 content-box），未设置全局 border-box。<br>
+        750px 宽度下无横向溢出（scrollWidth = clientWidth = 750），但 content-box 在复杂布局下易导致宽度溢出风险。</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>交互</td>
+      <td><span class="badge badge-warn">⚠️ 部分符合</span></td>
+      <td>• 行/卡片 cursor: pointer，有 transition 过渡 ✅<br>
+        • 下钻均走右侧抽屉 ✅<br>
+        • Token 柱状图柱子点击后<strong>直接跳转/滚动到时间线对应轮次</strong>，而非展开 Token 明细抽屉——与任务描述中「Token 抽屉」预期不符，可能是交互设计变更或缺少该抽屉。</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>一致性</td>
+      <td><span class="badge badge-pass">✅ 符合</span></td>
+      <td>相同场景使用同一组件：文件树（引用分析）与产物清单使用相同的徽章组件（×1 / 未用 / 新建）；各抽屉结构统一（标题 + 副标题 + 分区）；pill 徽章全局统一风格。</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>问题清单（按严重程度排序）</h2>
+
+<div class="issue severity-high">
+  <div class="issue-title">❌ 严重：box-sizing 未设置为 border-box（准则 8）</div>
+  <div class="issue-body">
+    <p><strong>位置：</strong>全局 html / body</p>
+    <p><strong>现象：</strong>document.documentElement 与 body 的 computed box-sizing 均为 <code>content-box</code>，未做全局 border-box 重置。</p>
+    <p><strong>影响：</strong>padding 和 border 会增加元素实际宽度，在含 padding 的容器中容易导致布局溢出。当前 750px 视口下暂未出现横向滚动，但在更窄视口（如 375px 移动端）或增加内边距后极易出问题。</p>
+    <p><strong>建议：</strong>在全局 CSS 中添加 <code>*, *::before, *::after { box-sizing: border-box; }</code>。</p>
+  </div>
+</div>
+
+<div class="issue severity-mid">
+  <div class="issue-title">⚠️ 中等：Token 柱状图点击未展开 Token 明细抽屉（准则 9）</div>
+  <div class="issue-body">
+    <p><strong>位置：</strong>Token 与上下文 → 每轮 Token 分布柱状图</p>
+    <p><strong>现象：</strong>点击柱状图柱子后，页面直接滚动到时间线对应轮次并高亮，并未展开右侧 Token 明细抽屉。任务描述预期为「点击柱子展开 Token 明细抽屉」。</p>
+    <p><strong>影响：</strong>用户无法在当前位置直接查看单轮 Token 明细（输入/输出/缓存拆分），必须滚动到时间线区域，交互路径变长。</p>
+    <p><strong>建议：</strong>确认产品预期——若设计为「点击柱子=定位时间线」，则更新文案（当前文案「点击柱定位下方时间线」已说明）；若预期为抽屉，则补充 Token 明细抽屉。</p>
+  </div>
+</div>
+
+<div class="issue severity-mid">
+  <div class="issue-title">⚠️ 中等：边框为 1px 而非 2px（准则 5）</div>
+  <div class="issue-body">
+    <p><strong>位置：</strong>时间线行 <code>bhhTdW_roundRow</code>、子智能体行 <code>bhhTdW_agentRow</code></p>
+    <p><strong>现象：</strong>实际 border 为 <code>1px solid rgba(0,0,0,0.1)</code>，与设计规范中 <code>border-l2</code>（2px 边框）不一致。</p>
+    <p><strong>影响：</strong>卡片/行的视觉层次感偏弱，在密集列表中行与行之间的边界不够清晰。</p>
+    <p><strong>建议：</strong>确认设计稿——若为 2px 边框则调整 CSS；若当前 1px 为最终设计则更新准则文档。</p>
+  </div>
+</div>
+
+<div class="issue severity-low">
+  <div class="issue-title">⚠️ 轻微：徽章 padding 与字号存在微小不一致（准则 1）</div>
+  <div class="issue-body">
+    <p><strong>位置：</strong>各区域徽章</p>
+    <p><strong>现象：</strong></p>
+    <ul>
+      <li><code>tagOk</code>（成功）padding: <code>0px 7px</code>，<code>tagError</code>（失败）padding: <code>1px 8px</code>——垂直方向差 1px</li>
+      <li>文件树徽章 padding: <code>1px 7px</code>，Skill 区徽章 padding: <code>1px 8px</code>——水平方向差 1px</li>
+      <li><code>tagMore</code>（+1）字号为 12px，其他徽章为 11px</li>
+    </ul>
+    <p><strong>影响：</strong>视觉上几乎不可感知，但在严格的设计系统中属于 token 不统一。</p>
+    <p><strong>建议：</strong>统一徽章 token：font-size 11px、padding 1px 8px，所有变体共用基础样式。</p>
+  </div>
+</div>
+
+<h2>全屏 vs 半屏对比</h2>
+<div class="note">
+  由于豆包内置浏览器视口限制（750×682），无法获取 1280×960 全屏截图。以下以半屏（750×682）截图为主要证据。全屏表现需在桌面浏览器（Chrome/Edge）中补充验证。
+</div>
+
+<h3>半屏（750×682）主视图</h3>
+<div class="screenshot-grid">
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-01-top.png" alt="页面顶部">
+    <div class="caption">页面顶部：会话质量分 + 六维雷达</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-02-stats.png" alt="本场统计">
+    <div class="caption">本场统计：4×3 指标网格</div>
+  </div>
+</div>
+<div class="screenshot-grid">
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-03-token-input.png" alt="Token 与输入构成">
+    <div class="caption">Token 柱状图 + 输入构成图例</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-04-subagent-skill.png" alt="子智能体与 Skill">
+    <div class="caption">子智能体列表 + Skill 调用（并排卡片）</div>
+  </div>
+</div>
+<div class="screenshot-grid">
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-05-ref-artifact.png" alt="引用分析与产物清单">
+    <div class="caption">引用分析（文件树）+ 产物清单（并排卡片）</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-06-timeline.png" alt="交互时间线">
+    <div class="caption">交互时间线：R1-R15 轮次列表</div>
+  </div>
+</div>
+
+<h3>抽屉截图</h3>
+<div class="screenshot-grid">
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-07-drawer-subagent.png" alt="子智能体抽屉">
+    <div class="caption">子智能体抽屉：任务 + 指标 + 产物文件</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-08-drawer-skill.png" alt="Skill 抽屉">
+    <div class="caption">Skill 抽屉：统计 + 调用记录</div>
+  </div>
+</div>
+<div class="screenshot-grid">
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-09-drawer-timeline.png" alt="时间线抽屉">
+    <div class="caption">时间线抽屉：交互详情（用户消息 + 回复 + 过程）</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="screenshots/halfscreen-10-drawer-context.png" alt="上下文构成抽屉">
+    <div class="caption">上下文构成抽屉：委派指令列表</div>
+  </div>
+</div>
+
+<h2>DOM 检查关键数据</h2>
+<table>
+  <thead>
+    <tr><th>检查项</th><th>实测值</th><th>预期值</th><th>结果</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>主色（Token 柱）</td><td>rgb(65, 118, 230) = #4176e6</td><td>#4176e6</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>成功色</td><td>rgb(34, 197, 94)</td><td>绿色系</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>失败色</td><td>rgb(236, 19, 19)</td><td>红色系</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>未用/警告色</td><td>rgb(245, 158, 11)</td><td>橙色系</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>徽章圆角</td><td>999px</td><td>999px（胶囊形）</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>徽章字号</td><td>11px（大部分）</td><td>11px</td><td><span class="badge badge-warn">⚠️ tagMore=12px</span></td></tr>
+    <tr><td>时间线状态徽章宽度</td><td>56px，center</td><td>56px，居中</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>行 borderRadius</td><td>10px</td><td>10px</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>行 margin-bottom</td><td>8px</td><td>8px</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>行 border 宽度</td><td>1px</td><td>2px（border-l2）</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+    <tr><td>box-sizing</td><td>content-box</td><td>border-box</td><td><span class="badge badge-fail">❌</span></td></tr>
+    <tr><td>横向溢出（750px）</td><td>无（scrollWidth=clientWidth=750）</td><td>无溢出</td><td><span class="badge badge-pass">✅</span></td></tr>
+    <tr><td>并排卡片高度</td><td>368px / 448px（两侧一致）</td><td>等高 stretch</td><td><span class="badge badge-pass">✅</span></td></tr>
+  </tbody>
+</table>
+
+</div>
+</body>
+</html>

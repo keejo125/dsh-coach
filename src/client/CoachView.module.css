@@ -890,7 +890,7 @@ button.profileLegendItem:hover {
 .tagRef {
   font-size: 11px;
   border-radius: 999px;
-  padding: 0 7px;
+  padding: 1px 8px;
   border: 1px solid transparent;
 }
 
@@ -1372,12 +1372,12 @@ button.profileLegendItem:hover {
 
 /* 标签溢出折叠（>3 个时收成 +N） */
 .tagMore {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--dsw-alias-label-secondary, #4e5969);
   background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.22));
   border-radius: 999px;
-  padding: 0 7px;
+  padding: 1px 8px;
   flex: none;
   font-variant-numeric: tabular-nums;
 }
