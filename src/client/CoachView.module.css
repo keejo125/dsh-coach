@@ -669,8 +669,7 @@
 /* 时间线行：柱联动高亮（R 标签匹配） */
 .roundRowHighlight {
   background: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 14%, transparent) !important;
-  outline: 1px solid var(--dsw-alias-state-warn-primary);
-  outline-offset: -1px;
+  border-color: var(--dsw-alias-state-warn-primary) !important;
 }
 
 /* 输入构成图例：次数副值 + 可点击下钻 */
@@ -932,6 +931,18 @@ button.profileLegendItem:hover {
   border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d92d20) 45%, transparent);
 }
 
+.tagIntervention {
+  flex: none;
+  font-size: 11px;
+  min-width: 62px;
+  text-align: center;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #722ed1) 14%, transparent);
+  color: var(--dsw-alias-state-business-tertiary, #722ed1);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #722ed1) 45%, transparent);
+  border-radius: 6px;
+  padding: 1px 7px;
+}
+
 /* —— 六维明细 —— */
 .scoreRow {
   display: flex;
@@ -1042,7 +1053,7 @@ button.profileLegendItem:hover {
 .profileSeg_user { background: var(--dsw-alias-state-business-primary, #4176e6); }
 .profileSeg_tools { background: var(--dsw-alias-state-success-primary, #2e7d32); }
 .profileSeg_plugin { background: var(--dsw-alias-label-tertiary, #86909c); }
-.profileSeg_delegation { background: var(--dsw-alias-state-business-primary, #722ed1); }
+.profileSeg_delegation { background: var(--dsw-alias-state-business-tertiary, #722ed1); }
 
 .profileLegend {
   display: grid;
@@ -1078,7 +1089,7 @@ button.profileLegendItem:hover {
 .profileDot_user { background: var(--dsw-alias-state-business-primary, #4176e6); }
 .profileDot_tools { background: var(--dsw-alias-state-success-primary, #2e7d32); }
 .profileDot_plugin { background: var(--dsw-alias-label-tertiary, #86909c); }
-.profileDot_delegation { background: var(--dsw-alias-state-business-primary, #722ed1); }
+.profileDot_delegation { background: var(--dsw-alias-state-business-tertiary, #722ed1); }
 
 /* —— 产物清单（树超高时限高内部滚动，与六维明细等高不爆白）—— */
 .artifactScroll {
@@ -1124,6 +1135,11 @@ button.profileLegendItem:hover {
   text-overflow: ellipsis;
   font-weight: 600;
   color: var(--dsw-alias-label-primary);
+  transition: color 0.12s ease;
+}
+
+.skillRow:hover .skillName {
+  color: var(--dsw-alias-state-business-primary, #4176e6);
 }
 
 .skillCalls {

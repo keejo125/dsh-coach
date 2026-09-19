@@ -35,6 +35,7 @@ export interface CoachTreeEntry {
   path: string
   outputOp?: 'create' | 'update'
   viewCount?: number
+  unused?: boolean
 }
 
 /** 把文件条目构建为文件树（dir 前、字典序；file 节点带徽标字段）。 */
@@ -72,6 +73,7 @@ export function buildFileTree(entries: readonly CoachTreeEntry[]): FileTreeNode[
       const node: FileTreeNode = { name, path, type: 'file' }
       if (file.outputOp !== undefined) node.outputOp = file.outputOp
       if (file.viewCount !== undefined) node.viewCount = file.viewCount
+      if (file.unused !== undefined) node.unused = file.unused
       nodes.push(node)
     }
     return nodes
@@ -666,27 +668,19 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
           {report.references.totalFiles === 0
             ? <div className={css.muted}>{t('coach.references.empty')}</div>
             : (
-              <div className={css.refTable}>
-                {(() => {
-                  const refs = report.references.topReferences
-                  const maxViews = Math.max(1, ...refs.map(ref => ref.views))
-                  return refs.map(ref => {
-                    const unused = report.references.unusedReferences.some(candidate => candidate.path === ref.path)
-                    return (
-                      <div key={ref.path} className={css.refRow} onClick={() => openFile(ref.path)} title={t('coach.references.clickHint')}>
-                        <span className={css.refPath} title={detailActive ? undefined : ref.path}>{shortenPath(ref.path)}</span>
-                        <div className={css.barTrack}>
-                          <div
-                            className={`${css.barFill} ${unused ? css.barMid : css.barGood}`}
-                            style={{ width: `${Math.max(3, (ref.views / maxViews) * 100)}%` }}
-                          />
-                        </div>
-                        <span className={css.refViews}>×{ref.views}</span>
-                        {unused && <span className={css.tagWarn}>{t('coach.references.unusedTag')}</span>}
-                      </div>
-                    )
-                  })
-                })()}
+              <div className={css.artifactScroll}>
+                <FileTree
+                  nodes={buildFileTree(
+                    report.references.topReferences.map(ref => ({
+                      path: ref.path,
+                      viewCount: ref.views,
+                      unused: report.references.unusedReferences.some(candidate => candidate.path === ref.path),
+                    })),
+                  )}
+                  t={t}
+                  agentsMeta={new Map()}
+                  onSelectFile={(path) => openFile(path)}
+                />
               </div>
             )}
         </section>
@@ -750,9 +744,15 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                     title={t('coach.timeline.openTurn')}
                   >
                     <span className={css.roundNo}>{roundNo}</span>
-                    <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
-                      {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
-                    </span>
+                    {round.kind === 'initial' ? (
+                      <span className={css.tagInitial}>{t('coach.timeline.initial')}</span>
+                    ) : round.signals?.correction ? (
+                      <span className={css.tagError}>{t('coach.timeline.correction')}</span>
+                    ) : round.signals?.intervention ? (
+                      <span className={css.tagIntervention}>{t('coach.timeline.intervention')}</span>
+                    ) : (
+                      <span className={css.tagFollow}>{t('coach.timeline.followup')}</span>
+                    )}
                     <span className={css.roundText}>{round.userText}</span>
                     {roundTagsOf(round, t, 3)}
                     <span className={css.roundArrow}>{'›'}</span>
@@ -904,7 +904,7 @@ function detailDrawerSections(
         sections.push({
           title: t('coach.skills.drawerCalls', { n: calls.length }),
           items: calls.map(call => ({
-            text: `R${call.round} · ${call.path ?? detail.name}${call.retried ? ` · ${t('coach.timeline.retried')}` : ''}`,
+            text: `R${call.round} · ${(timeline?.rounds[call.round - 1]?.userText ?? call.path ?? detail.name).slice(0, 60)}${call.retried ? ` · ${t('coach.timeline.retried')}` : ''}`,
             tone: call.failed ? 'error' : 'ok',
           })),
         })
@@ -1042,20 +1042,6 @@ function suggestKindLabel(kind: CoachSuggestionKind, t: Translate): string {
   }
 }
 
-/**
- * 路径尾部保留截断（P2-6）：长路径保留「父目录/文件名」尾部，前缀折叠为 …/，
- * 避免多条仅前缀相同的路径截断后肉眼同名。title 仍保留完整路径。
- */
-function shortenPath(path: string, max = 28): string {
-  if (path.length <= max) return path
-  const parts = path.split('/')
-  const file = parts.pop() ?? ''
-  const parent = parts.pop()
-  const tail = parent !== undefined ? `${parent}/${file}` : file
-  if (tail.length + 3 <= max) return `…/${tail}`
-  if (file.length + 3 <= max) return `…/${file}`
-  return `…/${file.slice(-(max - 3))}`
-}
 
 /** 文件名（末段），完整路径放 title/aria（P2-9）。 */
 function fileNameOf(path: string): string {
@@ -1160,9 +1146,15 @@ function TimelineDrawer({
               : rounds.map((round, index) => (
               <details key={index} className={css.round}>
                 <summary className={css.roundHead}>
-                  <span className={round.kind === 'initial' ? css.tagInitial : css.tagFollow}>
-                    {round.kind === 'initial' ? t('coach.timeline.initial') : t('coach.timeline.followup')}
-                  </span>
+                  {round.kind === 'initial' ? (
+                    <span className={css.tagInitial}>{t('coach.timeline.initial')}</span>
+                  ) : round.signals?.correction ? (
+                    <span className={css.tagError}>{t('coach.timeline.correction')}</span>
+                  ) : round.signals?.intervention ? (
+                    <span className={css.tagIntervention}>{t('coach.timeline.intervention')}</span>
+                  ) : (
+                    <span className={css.tagFollow}>{t('coach.timeline.followup')}</span>
+                  )}
                   <span className={css.roundText}>{round.userText}</span>
                   {roundTagsOf(round, t, 3)}
                 </summary>

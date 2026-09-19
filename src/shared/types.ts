@@ -106,6 +106,8 @@ export interface FileTreeNode {
   outputOp?: 'create' | 'update'
   /** 贡献该节点的 agentKey 列表（去重，主在前）。 */
   agents?: string[]
+  /** 引用分析：本轮被读但未用于任何产物。 */
+  unused?: boolean;
 }
 
 // ============================================================

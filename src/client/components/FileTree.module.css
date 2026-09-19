@@ -93,3 +93,13 @@
   color: #6b3fa0;
   flex: none;
 }
+
+/* 「未用」徽标（引用分析：读了但没用于产物） */
+.unusedBadge {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 8px;
+  flex: none;
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 14%, transparent);
+  color: var(--dsw-alias-state-warn-primary, #7a2d00);
+}
