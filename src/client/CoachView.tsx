@@ -1277,7 +1277,7 @@ export function RoundDetail({ round, t, onSelectFile }: {
                 {created > 0 && `新建 ${created}`}{updated > 0 && (created > 0 ? ' · ' : '') + `更新 ${updated}`}
               </span>
             </div>
-            <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} onSelectFile={handleSelectOutputs} />
+            <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} onSelectFile={handleSelectOutputs} showCounts={false} />
           </>
         )
       })()}
@@ -1296,9 +1296,9 @@ export function RoundDetail({ round, t, onSelectFile }: {
                 <span className={css.actionGroupName}>{g.name}</span>
                 {isSkillAction(g.name) && <span className={css.tagSkill}>skill</span>}
                 <span style={{flex:1}} />
-                <span className={css.actionGroupCount}>×{g.count}</span>
                 {g.failed > 0 && <span className={css.tagError}>{t('coach.timeline.failed')} {g.failed}</span>}
                 {g.retried > 0 && <span className={css.tagWarn}>{t('coach.timeline.retried')} {g.retried}</span>}
+                <span className={css.actionGroupCount}>×{g.count}</span>
               </div>
               {g.paths.length > 0 && (
                 <FileTree

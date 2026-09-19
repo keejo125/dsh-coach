@@ -1524,18 +1524,10 @@ chatUser {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin: 0 0 6px;
-  padding: 10px 0 6px;
+  margin: 12px 0 6px;
+  padding-top: 10px;
   border-top: 1px solid var(--dsw-alias-border-l3);
-  position: sticky;
-  background: var(--dsw-alias-bg-layer-1, #fff);
-  z-index: 1;
 }
-/* 堆叠吸顶：每个标题依次往下排 */
-.sectionHead:nth-of-type(1) { top: 0; }
-.sectionHead:nth-of-type(2) { top: 34px; }
-.sectionHead:nth-of-type(3) { top: 68px; }
-.sectionHead:nth-of-type(4) { top: 102px; }
 .sectionHead:first-child {
   margin-top: 0;
   padding-top: 0;
