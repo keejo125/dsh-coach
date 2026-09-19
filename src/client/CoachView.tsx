@@ -1072,13 +1072,8 @@ function skillToolStats(timeline: CoachTimeline | null, skills: readonly CoachSk
 }
 
 /** 时间线轮次标签（干预/纠错/引用/产物），最多显示 limit 个，超出折叠为 +N。 */
-function roundTagsOf(round: CoachTimelineRound, t: Translate, limit: number): JSX.Element[] {  const tags: JSX.Element[] = []
-  if (round.signals.intervention) {
-    tags.push(<span key="intervention" className={css.tagWarn}>{t('coach.timeline.intervention')}</span>)
-  }
-  if (round.signals.correction) {
-    tags.push(<span key="correction" className={css.tagError}>{t('coach.timeline.correction')}</span>)
-  }
+function roundTagsOf(round: CoachTimelineRound, t: Translate, limit: number): JSX.Element[] {
+  const tags: JSX.Element[] = []
   if (round.references.length > 0) {
     tags.push(<span key="refs" className={css.tagRef}>{t('coach.timeline.refs', { n: round.references.length })}</span>)
   }
@@ -1392,8 +1387,8 @@ function renderTokenProfile(
             <>
               <i className={`${css.profileDot} ${css[`profileDot_${part.key}`]}`} />
               {labelOf(part.key)}
-              <b>{part.value.toLocaleString()}字</b>
-              <span className={css.profileCount}>{part.count}{unitOf(part.key)}</span>
+              <b>{part.value.toLocaleString()} 字</b>
+              <span className={css.profileCount}>{part.count} {unitOf(part.key)}</span>
             </>
           )
           return drillable(part.key) && onDrill !== undefined

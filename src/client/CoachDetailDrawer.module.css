@@ -228,7 +228,7 @@
 .barFill {
   height: 100%;
   border-radius: 999px;
-  background: var(--dsw-alias-brand-primary, #3d7eff);
+  background: var(--dsw-alias-state-business-primary, #4176e6);
 }
 
 .barValue {
