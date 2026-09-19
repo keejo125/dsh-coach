@@ -1527,6 +1527,10 @@ chatUser {
   margin: 12px 0 6px;
   padding-top: 10px;
   border-top: 1px solid var(--dsw-alias-border-l3);
+  position: sticky;
+  top: 0;
+  background: var(--dsw-alias-bg-layer-1);
+  z-index: 1;
 }
 .sectionHead:first-child {
   margin-top: 0;
@@ -1544,6 +1548,8 @@ chatUser {
 }
 .processBlockOpen {
   margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dsw-alias-border-l3);
 }
 .actionGroup {
   margin-bottom: 8px;

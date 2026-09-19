@@ -1291,8 +1291,8 @@ export function RoundDetail({ round, t, onSelectFile }: {
               <div className={css.actionGroupHead}>
                 <span className={css.actionGroupName}>{g.name}</span>
                 {isSkillAction(g.name) && <span className={css.tagSkill}>skill</span>}
-                <span className={css.actionGroupCount}>×{g.count}</span>
                 <span style={{flex:1}} />
+                <span className={css.actionGroupCount}>×{g.count}</span>
                 {g.failed > 0 && <span className={css.tagError}>{t('coach.timeline.failed')} {g.failed}</span>}
                 {g.retried > 0 && <span className={css.tagWarn}>{t('coach.timeline.retried')} {g.retried}</span>}
               </div>
