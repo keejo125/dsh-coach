@@ -127,6 +127,7 @@ export const zh = {
   'coach.timeline.outputs': '产物',
   'coach.timeline.chatTitle': '对话详情',
   'coach.timeline.files': '文件',
+  'coach.timeline.toolCallTitle': '工具调用',
   'coach.timeline.toolCalls': '次调用',
   'coach.timeline.process': '过程 · 工具调用',
   'coach.drawer.title': '文件正文',

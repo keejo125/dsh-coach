@@ -126,6 +126,7 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.timeline.outputs': 'Outputs',
   'coach.timeline.chatTitle': 'Conversation',
   'coach.timeline.files': 'files',
+  'coach.timeline.toolCallTitle': 'Tool calls',
   'coach.timeline.toolCalls': 'calls',
   'coach.timeline.process': 'Process · tool calls',
   'coach.drawer.title': 'File content',

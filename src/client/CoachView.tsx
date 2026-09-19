@@ -1250,41 +1250,38 @@ export function RoundDetail({ round, t, onSelectFile }: {
           <div className={css.chatAssistant}>{round.assistantText}</div>
         )}
       </div>
-      {/* ② 参考 + ③ 产物 */}
-      {(round.references.length > 0 || round.artifacts.length > 0) && (
-        <div className={css.subPair}>
-          {round.references.length > 0 && (
-            <div className={css.subBlock}>
-              <div className={css.sectionHead}>
-                <span className={css.sectionTitle}>{t('coach.timeline.references')}</span>
-                <span className={css.sectionSub}>{round.references.length} {t('coach.timeline.files')}</span>
-              </div>
-              <FileTree
-                nodes={buildFileTree(round.references.map(ref => ({ path: ref.path, viewCount: ref.views })))}
-                t={t}
-                agentsMeta={new Map()}
-                onSelectFile={(path: string, _node: FileTreeNode): void => { onSelectFile?.(path) }}
-              />
-            </div>
-          )}
-          {round.artifacts.length > 0 && (
-            <div className={css.subBlock}>
-              <div className={css.sectionHead}>
-                <span className={css.sectionTitle}>{t('coach.timeline.outputs')}</span>
-                <span className={css.sectionSub}>
-                  {round.artifacts.length} {t('coach.timeline.files')}
-                </span>
-              </div>
-              <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} onSelectFile={handleSelectOutputs} />
-            </div>
-          )}
+      {/* ② 参考 */}
+      {round.references.length > 0 && (
+        <div className={css.sectionHead}>
+          <span className={css.sectionTitle}>{t('coach.timeline.references')}</span>
+          <span className={css.sectionSub}>{round.references.length} {t('coach.timeline.files')}</span>
         </div>
+      )}
+      {round.references.length > 0 && (
+        <FileTree
+          nodes={buildFileTree(round.references.map(ref => ({ path: ref.path, viewCount: ref.views })))}
+          t={t}
+          agentsMeta={new Map()}
+          onSelectFile={(path: string, _node: FileTreeNode): void => { onSelectFile?.(path) }}
+        />
+      )}
+      {/* ③ 产物 */}
+      {round.artifacts.length > 0 && (
+        <div className={css.sectionHead}>
+          <span className={css.sectionTitle}>{t('coach.timeline.outputs')}</span>
+          <span className={css.sectionSub}>
+            {round.artifacts.length} {t('coach.timeline.files')}
+          </span>
+        </div>
+      )}
+      {round.artifacts.length > 0 && (
+        <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} onSelectFile={handleSelectOutputs} />
       )}
       {/* ④ 过程工具调用（默认展开） */}
       {round.actions.length > 0 && (
         <div className={css.processBlockOpen}>
           <div className={css.sectionHead}>
-            <span className={css.sectionTitle}>{t('coach.timeline.process')}</span>
+            <span className={css.sectionTitle}>{t('coach.timeline.toolCallTitle')}</span>
             <span className={css.sectionSub}>
               {round.actions.length} {t('coach.timeline.toolCalls')}
             </span>
@@ -1300,12 +1297,12 @@ export function RoundDetail({ round, t, onSelectFile }: {
                 {g.retried > 0 && <span className={css.tagWarn}>{t('coach.timeline.retried')} {g.retried}</span>}
               </div>
               {g.paths.length > 0 && (
-                <div className={css.actionGroupPaths}>
-                  {g.paths.slice(0, 5).map((p, i) => (
-                    <span key={i} className={css.actionPath}>{p}</span>
-                  ))}
-                  {g.paths.length > 5 && <span className={css.actionPath}>… +{g.paths.length - 5}</span>}
-                </div>
+                <FileTree
+                  nodes={buildFileTree(g.paths.map(path => ({ path, viewCount: 1 })))}
+                  t={t}
+                  agentsMeta={new Map()}
+                  onSelectFile={(path: string, _node: FileTreeNode): void => { onSelectFile?.(path) }}
+                />
               )}
             </div>
           ))}
