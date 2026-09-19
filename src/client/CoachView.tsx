@@ -1218,23 +1218,41 @@ export function RoundDetail({ round, t, onSelectFile }: {
   t: Translate
   onSelectFile?: (path: string) => void
 }): JSX.Element {
-  // exactOptionalPropertyTypes：产物树 onSelectFile 始终传函数（内部可选调用）
   const handleSelectOutputs = (path: string): void => { onSelectFile?.(path) }
+  // 按工具类型聚合（Read/Write/Bash/...），副标题 pill
+  const actionGroups = useMemo(() => {
+    const map = new Map<string, { name: string; count: number; failed: number; retried: number; paths: string[] }>()
+    for (const action of round.actions) {
+      const g = map.get(action.name) ?? { name: action.name, count: 0, failed: 0, retried: 0, paths: [] }
+      g.count++
+      if (action.failed) g.failed++
+      if (action.retried) g.retried++
+      if (action.path !== null) g.paths.push(action.path)
+      map.set(action.name, g)
+    }
+    return [...map.values()].sort((a, b) => b.count - a.count)
+  }, [round.actions])
   return (
     <div className={css.roundBody}>
-      {/* ① 对话段：与对话框一致的气泡 */}
+      {/* ① 对话详情 */}
+      <div className={css.sectionHead}>
+        <span className={css.sectionTitle}>{t('coach.timeline.chatTitle')}</span>
+      </div>
       <div className={css.chatBlock}>
         <div className={css.chatUser}>{round.userText}</div>
         {round.assistantText !== null && (
           <div className={css.chatAssistant}>{round.assistantText}</div>
         )}
       </div>
-      {/* ② 参考段 + ③ 产物段：左右并排（面板宽度下比纵向三段更平衡） */}
+      {/* ② 参考 + ③ 产物 */}
       {(round.references.length > 0 || round.artifacts.length > 0) && (
         <div className={css.subPair}>
           {round.references.length > 0 && (
             <div className={css.subBlock}>
-              <div className={css.subTitle}>{t('coach.timeline.references')} {round.references.length}</div>
+              <div className={css.sectionHead}>
+                <span className={css.sectionTitle}>{t('coach.timeline.references')}</span>
+                <span className={css.sectionSub}>{round.references.length} {t('coach.timeline.files')}</span>
+              </div>
               <FileTree
                 nodes={buildFileTree(round.references.map(ref => ({ path: ref.path, viewCount: ref.views })))}
                 t={t}
@@ -1245,26 +1263,45 @@ export function RoundDetail({ round, t, onSelectFile }: {
           )}
           {round.artifacts.length > 0 && (
             <div className={css.subBlock}>
-              <div className={css.subTitle}>{t('coach.timeline.outputs')} {round.artifacts.length}</div>
+              <div className={css.sectionHead}>
+                <span className={css.sectionTitle}>{t('coach.timeline.outputs')}</span>
+                <span className={css.sectionSub}>
+                  {round.artifacts.length} {t('coach.timeline.files')}
+                </span>
+              </div>
               <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} onSelectFile={handleSelectOutputs} />
             </div>
           )}
         </div>
       )}
-      {/* 过程：工具动作明细，折叠 */}
+      {/* ④ 过程工具调用（默认展开） */}
       {round.actions.length > 0 && (
-        <details className={css.processBlock}>
-          <summary className={css.processHead}>
-            {t('coach.timeline.process')} {round.actions.length}
-          </summary>
-          {round.actions.map((action, i) => (
-            <div key={i} className={css.actionRow}>
-              <span className={css.actionName}>{action.name}</span>
-              {action.path !== null && <span className={css.actionPath} title={action.path}>{action.path}</span>}
-              {action.failed && <span className={css.tagError}>{action.retried ? t('coach.timeline.retried') : t('coach.timeline.failed')}</span>}
+        <div className={css.processBlockOpen}>
+          <div className={css.sectionHead}>
+            <span className={css.sectionTitle}>{t('coach.timeline.process')}</span>
+            <span className={css.sectionSub}>
+              {round.actions.length} {t('coach.timeline.toolCalls')}
+            </span>
+          </div>
+          {actionGroups.map(g => (
+            <div key={g.name} className={css.actionGroup}>
+              <div className={css.actionGroupHead}>
+                <span className={css.actionGroupName}>{g.name}</span>
+                <span className={css.actionGroupCount}>{g.count}</span>
+                {g.failed > 0 && <span className={css.tagError}>{t('coach.timeline.failed')} {g.failed}</span>}
+                {g.retried > 0 && <span className={css.tagWarn}>{t('coach.timeline.retried')} {g.retried}</span>}
+              </div>
+              {g.paths.length > 0 && (
+                <div className={css.actionGroupPaths}>
+                  {g.paths.slice(0, 5).map((p, i) => (
+                    <span key={i} className={css.actionPath}>{p}</span>
+                  ))}
+                  {g.paths.length > 5 && <span className={css.actionPath}>… +{g.paths.length - 5}</span>}
+                </div>
+              )}
             </div>
           ))}
-        </details>
+        </div>
       )}
     </div>
   )

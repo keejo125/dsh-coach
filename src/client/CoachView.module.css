@@ -1519,3 +1519,52 @@ button.profileLegendItem:hover {
   padding: 1px 8px;
   margin-top: 1px;
 }
+
+/* RoundDetail 分段标题 */
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 12px 0 6px;
+}
+.sectionHead:first-child { margin-top: 0; }
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+.sectionSub {
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
+}
+.processBlockOpen {
+  margin-top: 12px;
+}
+.actionGroup {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+.actionGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.actionGroupName {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+.actionGroupCount {
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.actionGroupPaths {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
