@@ -1215,8 +1215,15 @@ function countsForRound(files: readonly CoachArtifactFile[]): CoachArtifacts {
 /** 时间线单轮展开：①对话气泡 ②参考文件树 ③产物文件树 + 过程折叠。导出供 SSR 冒烟测试。 */
 /** 判断是否 skill 调用（非内置工具名）。 */
 function isSkillAction(name: string): boolean {
-  const builtin = new Set(['read','write','bash','edit','grep','glob','webfetch','websearch','task','todowrite','notebookedit','computeruse','mouse','keyboard','shell','exec','spawn','applypatch','search','list','get','put','post','delete'])
-  return !builtin.has(name.toLowerCase())
+  const builtin = new Set(['read','write','bash','edit','grep','glob','webfetch','websearch','todowrite','notebookedit','computeruse','mouse','keyboard','shell','exec','spawn','applypatch','search','list','get','put','post','delete'])
+  const lower = name.toLowerCase()
+  if (lower === 'task' || lower === 'delegate' || lower === 'subagent' || lower === 'organizer') return false
+  return !builtin.has(lower)
+}
+
+function isAgentAction(name: string): boolean {
+  const lower = name.toLowerCase()
+  return lower === 'task' || lower === 'delegate' || lower === 'subagent' || lower === 'organizer'
 }
 
 export function RoundDetail({ round, t, onSelectFile }: {
@@ -1294,7 +1301,7 @@ export function RoundDetail({ round, t, onSelectFile }: {
             <div key={g.name} className={css.actionGroup}>
               <div className={css.actionGroupHead}>
                 <span className={css.actionGroupName}>{g.name}</span>
-                {isSkillAction(g.name) && <span className={css.tagSkill}>skill</span>}
+                {isSkillAction(g.name) && <span className={css.tagSkill}>skill</span>}{isAgentAction(g.name) && <span className={css.tagAgent}>agent</span>}
                 <span style={{flex:1}} />
                 {g.failed > 0 && <span className={css.tagError}>{t('coach.timeline.failed')} {g.failed}</span>}
                 {g.retried > 0 && <span className={css.tagWarn}>{t('coach.timeline.retried')} {g.retried}</span>}
