@@ -94,8 +94,7 @@ export function CoachDrawer({ sessionId, path, t, onClose }: CoachDrawerProps): 
               type="button"
               className={css.iconButton}
               onClick={() => {
-                const dir = path.split('/').slice(0, -1).join('/')
-                if (dir) window.open('file://' + dir, '_blank')
+                fetch(`/ctx/api/session/${sessionId}/reveal?path=${encodeURIComponent(path)}`)
               }}
               title={t('coach.drawer.openDir')}
               aria-label={t('coach.drawer.openDir')}
