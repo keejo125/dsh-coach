@@ -794,9 +794,9 @@ button.profileLegendItem:hover {
   font-size: 13px;
   line-height: 1.6;
   color: var(--dsw-alias-label-primary-inverted);
-  background: var(--dsw-alias-state-business-primary);
-  border-radius: 12px 12px 3px 12px;
-  padding: 8px 12px;
+  background: var(--dsw-alias-fill-secondary, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  padding: 10px 16px;
   margin-top: 4px;
   white-space: pre-wrap;
   word-break: break-word;
