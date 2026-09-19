@@ -1266,17 +1266,21 @@ export function RoundDetail({ round, t, onSelectFile }: {
         />
       )}
       {/* ③ 产物 */}
-      {round.artifacts.length > 0 && (
-        <div className={css.sectionHead}>
-          <span className={css.sectionTitle}>{t('coach.timeline.outputs')}</span>
-          <span className={css.sectionSub}>
-            {round.artifacts.length} {t('coach.timeline.files')}
-          </span>
-        </div>
-      )}
-      {round.artifacts.length > 0 && (
-        <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} onSelectFile={handleSelectOutputs} />
-      )}
+      {round.artifacts.length > 0 && (() => {
+        const created = round.artifacts.filter(f => f.op === 'create').length
+        const updated = round.artifacts.length - created
+        return (
+          <>
+            <div className={css.sectionHead}>
+              <span className={css.sectionTitle}>{t('coach.timeline.outputs')}</span>
+              <span className={css.sectionSub}>
+                {created > 0 && `新建 ${created}`}{updated > 0 && (created > 0 ? ' · ' : '') + `更新 ${updated}`}
+              </span>
+            </div>
+            <ArtifactTree files={round.artifacts} counts={countsForRound(round.artifacts)} t={t} onSelectFile={handleSelectOutputs} />
+          </>
+        )
+      })()}
       {/* ④ 过程工具调用（默认展开） */}
       {round.actions.length > 0 && (
         <div className={css.processBlockOpen}>
