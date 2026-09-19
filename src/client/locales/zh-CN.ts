@@ -141,7 +141,7 @@ export const zh = {
   'coach.agents.readFiles': '读 {n} 文件',
   'coach.agents.toolCalls': '工具 {n} 次',
   'coach.agents.failures': '失败 {n}',
-  'coach.agents.writtenFiles': '产物 {n}',
+  'coach.agents.writtenFiles': '产物 {n} 文件',
   'coach.agents.delegations': '委派 {n}',
   'coach.agents.hasFinal': '有最终答复',
   'coach.agents.zeroRow': '其余 {n} 个子代理无工具/文件调用',
