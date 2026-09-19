@@ -187,6 +187,7 @@ export const zh = {
   'coach.skills.title': 'Skill 调用',
   'coach.skills.sub': '调用 {calls} 次 · 失败 {failed}',
   'coach.skills.calls': '调用',
+  'coach.skills.ok': 'coach.skills.ok',
   'coach.skills.failed': '失败',
   'coach.skills.none': '本次未调用 Skill',
   'coach.skills.recent': '最近调用',

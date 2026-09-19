@@ -644,6 +644,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                 >
                   <span className={css.skillName} title={skill.name}>{skill.name}</span>
                   <span className={css.skillCalls}>{t('coach.skills.calls')} <b>{stats.calls}</b></span>
+                  <span className={css.skillOk}>{t('coach.skills.ok')} <b>{Math.max(0, stats.calls - stats.failed)}</b></span>
                   {stats.failed > 0 && <span className={css.skillFailed}>{t('coach.skills.failed')} {stats.failed}</span>}
                 </button>
                 )
@@ -1387,7 +1388,7 @@ function renderTokenProfile(
             <>
               <i className={`${css.profileDot} ${css[`profileDot_${part.key}`]}`} />
               {labelOf(part.key)}
-              <b>{part.value.toLocaleString()}</b>
+              <b>{part.value.toLocaleString()}字</b>
               <span className={css.profileCount}>{part.count}{unitOf(part.key)}</span>
             </>
           )

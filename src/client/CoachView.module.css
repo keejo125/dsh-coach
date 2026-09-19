@@ -103,8 +103,12 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 14px;
-  /* 两列按内容高度各自排布：避免内容少的一侧（如 Skill 卡）被等高拉伸出大片空白 */
-  align-items: start;
+  /* 并排两卡等高：视觉左右对齐 */
+  align-items: stretch;
+}
+
+.grid2 > .card {
+  height: 100%;
 }
 
 .card {
@@ -624,11 +628,12 @@
   align-items: center;
   gap: 6px;
   max-width: 300px;
-  padding: 5px 9px;
+  padding: 6px 10px;
   border-radius: 8px;
-  background: var(--dsw-alias-tooltip-bg, rgba(24, 26, 30, 0.92));
-  border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.35));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  background: var(--dsw-alias-bg-layer-1, #ffffff);
+  color: var(--dsw-alias-label-primary);
+  border: 1px solid var(--dsw-alias-border-l2, rgba(127, 127, 127, 0.2));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
   font-size: 11.5px;
   white-space: nowrap;
   pointer-events: none;
@@ -636,7 +641,7 @@
 }
 .turnTipRound {
   font-weight: 700;
-  color: var(--dsw-alias-label-primary-inverted, #fff);
+  color: var(--dsw-alias-label-primary);
   font-variant-numeric: tabular-nums;
 }
 .turnTipTokens {
@@ -926,9 +931,15 @@ button.profileLegendItem:hover {
 }
 
 .tagError {
+  flex: none;
+  font-size: 11px;
+  min-width: 62px;
+  text-align: center;
   background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d92d20) 10%, transparent);
   color: var(--dsw-alias-state-error-primary, #8f1d14);
-  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d92d20) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary, #d92d20) 45%, transparent);
+  border-radius: 6px;
+  padding: 1px 7px;
 }
 
 .tagIntervention {
@@ -1057,26 +1068,27 @@ button.profileLegendItem:hover {
 
 .profileLegend {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 6px 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
   margin-top: 7px;
 }
 
 .profileLegendItem {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 11.5px;
   color: var(--dsw-alias-label-secondary);
   white-space: nowrap;
 }
 
 .profileLegendItem b {
+  margin-left: auto;
   color: var(--dsw-alias-label-primary);
   font-weight: 600;
-  margin-left: auto;
   font-variant-numeric: tabular-nums;
 }
+
 
 .profileDot {
   width: 8px;
@@ -1148,6 +1160,13 @@ button.profileLegendItem:hover {
 
 .skillCalls b {
   color: var(--dsw-alias-label-primary);
+}
+
+.skillOk {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--dsw-alias-state-success-primary, #12805c);
+  b { color: inherit; }
 }
 
 .skillFailed {
@@ -1282,7 +1301,7 @@ button.profileLegendItem:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   width: 100%;
   padding: 7px 10px;
   border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.15));
