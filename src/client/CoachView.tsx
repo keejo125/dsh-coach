@@ -1294,7 +1294,16 @@ export function RoundDetail({ round, t, onSelectFile }: {
           <div className={css.sectionHead}>
             <span className={css.sectionTitle}>{t('coach.timeline.toolCallTitle')}</span>
             <span className={css.sectionSub}>
-              {round.actions.length} {t('coach.timeline.toolCalls')}
+              {(() => {
+                const tools = actionGroups.filter(g => !isSkillAction(g.name) && !isAgentAction(g.name)).length
+                const skills = actionGroups.filter(g => isSkillAction(g.name)).length
+                const agents = actionGroups.filter(g => isAgentAction(g.name)).length
+                const parts = []
+                if (tools > 0) parts.push(`${t('coach.timeline.tools')} ${tools}`)
+                if (skills > 0) parts.push(`${t('coach.timeline.skills')} ${skills}`)
+                if (agents > 0) parts.push(`${t('coach.timeline.agents')} ${agents}`)
+                return parts.join(' · ')
+              })()}
             </span>
           </div>
           {actionGroups.map(g => (
