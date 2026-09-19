@@ -943,9 +943,6 @@ chatUser {
   flex: none;
   font-size: 11px;
   line-height: 1.4;
-  min-width: 80px;
-  text-align: center;
-  justify-content: center;
   white-space: nowrap;
   background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d92d20) 10%, transparent);
   color: var(--dsw-alias-state-error-primary, #8f1d14);
