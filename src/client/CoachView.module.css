@@ -1580,7 +1580,7 @@ button.profileLegendItem:hover {
   font-size: 11px;
   border-radius: 999px;
   padding: 1px 8px;
-  background: color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #7c3aed) 14%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #7c3aed) 22%, transparent);
   color: var(--dsw-alias-state-business-tertiary, #7c3aed);
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #7c3aed) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #7c3aed) 60%, transparent);
 }
