@@ -1215,10 +1215,10 @@ function countsForRound(files: readonly CoachArtifactFile[]): CoachArtifacts {
 /** 时间线单轮展开：①对话气泡 ②参考文件树 ③产物文件树 + 过程折叠。导出供 SSR 冒烟测试。 */
 /** 判断是否 skill 调用（非内置工具名）。 */
 function isSkillAction(name: string): boolean {
-  const builtin = new Set(['read','write','bash','edit','grep','glob','webfetch','websearch','todowrite','notebookedit','computeruse','mouse','keyboard','shell','exec','spawn','applypatch','search','list','get','put','post','delete'])
   const lower = name.toLowerCase()
-  if (lower === 'task' || lower === 'delegate' || lower === 'subagent' || lower === 'organizer') return false
-  return !builtin.has(lower)
+  // 只标明显是 skill 的：workflow / run_skill / use_skill
+  const knownSkills = new Set(['workflow','run_skill','use_skill','skill'])
+  return knownSkills.has(lower)
 }
 
 function isAgentAction(name: string): boolean {
