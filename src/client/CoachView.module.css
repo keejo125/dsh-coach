@@ -959,9 +959,9 @@ button.profileLegendItem:hover {
   text-align: center;
   justify-content: center;
   white-space: nowrap;
-  background: color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #722ed1) 14%, transparent);
-  color: var(--dsw-alias-state-business-tertiary, #722ed1);
-  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #722ed1) 45%, transparent);
+  background: color-mix(in srgb, #a78bfa 25%, transparent);
+  color: #c4b5fd;
+  border: 1px solid color-mix(in srgb, #a78bfa 60%, transparent);
   border-radius: 999px;
   padding: 1px 8px;
 }

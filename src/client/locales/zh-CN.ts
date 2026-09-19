@@ -113,7 +113,7 @@ export const zh = {
   'coach.timeline.title': '交互时间线',
   'coach.timeline.sub': '共 {n} 个用户轮 · 全量 {total}（含 {tool} 个工具处理轮）· 点击展开复盘明细',
   'coach.timeline.expandHint': '点击轮次展开复盘明细',
-  'coach.timeline.initial': '初始任务',
+  'coach.timeline.initial': '初始',
   'coach.timeline.followup': '追问',
   'coach.timeline.intervention': '干预',
   'coach.timeline.correction': '纠错',

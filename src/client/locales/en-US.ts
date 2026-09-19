@@ -112,7 +112,7 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.timeline.title': 'Interaction timeline',
   'coach.timeline.sub': '{n} user rounds · {total} total (incl. {tool} tool-only) · click to expand',
   'coach.timeline.expandHint': 'Click a round to expand review details',
-  'coach.timeline.initial': 'Initial task',
+  'coach.timeline.initial': 'Start',
   'coach.timeline.followup': 'Follow-up',
   'coach.timeline.intervention': 'Intervention',
   'coach.timeline.correction': 'Correction',
