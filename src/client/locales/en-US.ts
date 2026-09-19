@@ -13,7 +13,7 @@ export const en: Record<ContextLocaleKey, string> = {
   'agent.subagent': 'Subagent',
   'agent.degraded': 'details over budget',
   'column.input': 'Inputs',
-  'column.reference': 'References',
+  'column.reference': 'View count',
   'column.output': 'Outputs',
   'input.dialog': 'Dialog input',
   'input.injected': 'System injections',

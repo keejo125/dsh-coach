@@ -14,7 +14,7 @@ export const zh = {
   'agent.subagent': '子Agent',
   'agent.degraded': '明细超限',
   'column.input': '输入',
-  'column.reference': '参考',
+  'column.reference': '查看次数',
   'column.output': '输出',
   'input.dialog': '对话输入',
   'input.injected': '系统注入',
