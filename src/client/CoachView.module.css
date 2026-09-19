@@ -20,7 +20,7 @@
 
 .suggestCount {
   font-size: 12px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.3));
   border-radius: 999px;
   padding: 0 9px;
@@ -30,7 +30,7 @@
 .suggestChevron {
   margin-left: auto;
   font-size: 18px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   transition: transform 0.18s ease;
 }
 
@@ -151,7 +151,7 @@
 }
 
 .cardSubLink:hover {
-  color: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-state-business-primary);
 }
 
 .muted {
@@ -262,15 +262,15 @@
 }
 
 .barToneMid {
-  background: var(--dsw-alias-brand-primary, #3d7eff);
+  background: var(--dsw-alias-state-business-primary, #4176e6);
 }
 
 .barToneLow {
-  background: #5f6673;
+  background: var(--dsw-alias-state-warn-primary, #b54708);
 }
 
 .barTonePoor {
-  background: var(--dsw-alias-state-danger-primary, #d92d20);
+  background: var(--dsw-alias-state-error-primary, #d92d20);
 }
 
 .dimBarScore {
@@ -305,7 +305,7 @@
   padding: 2px 10px;
   border-radius: 999px;
   color: var(--dsw-alias-label-primary-inverted);
-  background: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-state-business-primary);
 }
 
 .hint {
@@ -329,13 +329,13 @@
 }
 
 .radarData {
-  fill: color-mix(in srgb, var(--dsw-alias-brand-primary) 18%, transparent);
-  stroke: var(--dsw-alias-brand-primary);
+  fill: color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, transparent);
+  stroke: var(--dsw-alias-state-business-primary);
   stroke-width: 2;
 }
 
 .radarDot {
-  fill: var(--dsw-alias-brand-primary);
+  fill: var(--dsw-alias-state-business-primary);
 }
 
 /* 短板定位：雷达图对应维度顶点放大高亮 */
@@ -346,7 +346,7 @@
 
 .radarLabel {
   font-size: 10px;
-  fill: #5f6673;
+  fill: var(--dsw-alias-label-tertiary, #5f6673);
 }
 
 .radarLabelZh {
@@ -366,7 +366,7 @@
 .radarHint {
   margin-top: 6px;
   font-size: 12px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   text-align: center;
 }
 
@@ -402,7 +402,7 @@
 }
 
 .stat:hover {
-  border-color: var(--dsw-alias-brand-primary, #3d7eff);
+  border-color: var(--dsw-alias-state-business-primary, #4176e6);
   background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.16));
 }
 
@@ -448,7 +448,7 @@
 }
 
 .agentRow:hover {
-  border-color: var(--dsw-alias-brand-primary, #3d7eff);
+  border-color: var(--dsw-alias-state-business-primary, #4176e6);
   background: var(--dsw-alias-bg-layer-2);
 }
 
@@ -461,7 +461,7 @@
   padding: 9px 11px;
   margin-bottom: 8px;
   background: var(--dsw-alias-bg-layer-0, rgba(127, 127, 127, 0.05));
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   cursor: default;
   font: inherit;
   opacity: 0.75;
@@ -471,7 +471,7 @@
   display: inline-block;
   margin-left: 8px;
   font-size: 11px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.35));
   border-radius: 999px;
   padding: 0 8px;
@@ -560,7 +560,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
 }
 
 /* —— Token 每轮分布柱图（汇总，点击联动下方时间线） —— */
@@ -581,7 +581,7 @@
 }
 .turnBarsHint {
   font-size: 11.5px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   margin-bottom: 8px;
 }
 .turnBars {
@@ -592,7 +592,7 @@
   height: 96px;
 }
 .turnBars:focus-visible {
-  outline: 2px solid var(--dsw-alias-brand-primary, #3d7eff);
+  outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
   outline-offset: 2px;
 }
 .turnBar {
@@ -601,14 +601,14 @@
   padding: 0;
   border: 0;
   border-radius: 2px 2px 0 0;
-  background: var(--dsw-alias-brand-primary, #3d7eff);
+  background: var(--dsw-alias-state-business-primary, #4176e6);
   cursor: pointer;
   opacity: 0.85;
 }
 .turnBar:hover,
 .turnBar:focus-visible {
   opacity: 1;
-  outline: 2px solid var(--dsw-alias-brand-primary, #3d7eff);
+  outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
   outline-offset: 1px;
 }
 .turnBarActive {
@@ -626,7 +626,7 @@
   max-width: 300px;
   padding: 5px 9px;
   border-radius: 8px;
-  background: var(--dsw-alias-bg-layer-0, rgba(24, 26, 30, 0.92));
+  background: var(--dsw-alias-tooltip-bg, rgba(24, 26, 30, 0.92));
   border: 1px solid var(--dsw-alias-border-l3, rgba(127, 127, 127, 0.35));
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
   font-size: 11.5px;
@@ -636,12 +636,12 @@
 }
 .turnTipRound {
   font-weight: 700;
-  color: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-label-primary-inverted, #fff);
   font-variant-numeric: tabular-nums;
 }
 .turnTipTokens {
   font-weight: 600;
-  color: var(--dsw-alias-brand-primary, #3d7eff);
+  color: var(--dsw-alias-state-business-primary, #4176e6);
   font-variant-numeric: tabular-nums;
 }
 .turnTipText {
@@ -653,7 +653,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   margin-top: 3px;
 }
 
@@ -663,7 +663,7 @@
   padding-top: 8px;
   border-top: 1px dashed var(--dsw-alias-border-l2);
   font-size: 12px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
 }
 
 /* 时间线行：柱联动高亮（R 标签匹配） */
@@ -675,7 +675,7 @@
 
 /* 输入构成图例：次数副值 + 可点击下钻 */
 .profileCount {
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   font-weight: 500;
   margin-left: 2px;
 }
@@ -714,7 +714,7 @@ button.profileLegendItem:hover {
 }
 
 .contextStat:hover {
-  border-color: var(--dsw-alias-brand-primary, #3d7eff);
+  border-color: var(--dsw-alias-state-business-primary, #4176e6);
   background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.16));
 }
 
@@ -728,14 +728,14 @@ button.profileLegendItem:hover {
   top: 6px;
   right: 7px;
   font-size: 11px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   opacity: 0.35;
   transition: opacity 0.15s ease;
 }
 
 .contextStat:hover .contextStatArrow {
   opacity: 1;
-  color: var(--dsw-alias-brand-primary, #3d7eff);
+  color: var(--dsw-alias-state-business-primary, #4176e6);
 }
 
 .contextStat b {
@@ -789,7 +789,7 @@ button.profileLegendItem:hover {
   font-size: 14px;
   line-height: 1.6;
   color: var(--dsw-alias-label-primary-inverted);
-  background: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-state-business-primary);
   border-radius: 12px 12px 3px 12px;
   padding: 8px 12px;
   margin-top: 4px;
@@ -843,7 +843,7 @@ button.profileLegendItem:hover {
   cursor: pointer;
   font-size: 11px;
   font-weight: 600;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   user-select: none;
 }
 
@@ -857,7 +857,7 @@ button.profileLegendItem:hover {
 }
 
 .actionName {
-  color: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-state-business-primary);
   min-width: 60px;
 }
 
@@ -880,30 +880,6 @@ button.profileLegendItem:hover {
 }
 
 /* —— 徽标 —— */
-.tagInitial {
-  flex: none;
-  font-size: 11px;
-  min-width: 62px;
-  text-align: center;
-  background: rgba(46, 125, 50, 0.14);
-  color: #1a5a2e;
-  border: 1px solid rgba(46, 125, 50, 0.45);
-  border-radius: 6px;
-  padding: 1px 7px;
-}
-
-.tagFollow {
-  flex: none;
-  font-size: 11px;
-  min-width: 62px;
-  text-align: center;
-  background: rgba(181, 71, 8, 0.14);
-  color: #7a2d00;
-  border: 1px solid rgba(181, 71, 8, 0.45);
-  border-radius: 6px;
-  padding: 1px 7px;
-}
-
 .tagOk,
 .tagWarn,
 .tagError,
@@ -914,22 +890,46 @@ button.profileLegendItem:hover {
   border: 1px solid transparent;
 }
 
+.tagInitial {
+  flex: none;
+  font-size: 11px;
+  min-width: 62px;
+  text-align: center;
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #2e7d32) 14%, transparent);
+  color: var(--dsw-alias-state-success-primary, #1a5a2e);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-success-primary, #2e7d32) 45%, transparent);
+  border-radius: 6px;
+  padding: 1px 7px;
+}
+
+.tagFollow {
+  flex: none;
+  font-size: 11px;
+  min-width: 62px;
+  text-align: center;
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 14%, transparent);
+  color: var(--dsw-alias-state-warn-primary, #7a2d00);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 45%, transparent);
+  border-radius: 6px;
+  padding: 1px 7px;
+}
+
 .tagOk {
-  background: rgba(46, 125, 50, 0.12);
-  color: #1a5a2e;
-  border-color: rgba(46, 125, 50, 0.45);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #2e7d32) 12%, transparent);
+  color: var(--dsw-alias-state-success-primary, #1a5a2e);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #2e7d32) 45%, transparent);
 }
 
 .tagWarn {
-  background: rgba(181, 71, 8, 0.12);
-  color: #7a2d00;
-  border-color: rgba(181, 71, 8, 0.45);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 12%, transparent);
+  color: var(--dsw-alias-state-warn-primary, #7a2d00);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 45%, transparent);
 }
 
 .tagError {
-  background: rgba(217, 45, 32, 0.1);
-  color: #8f1d14;
-  border-color: rgba(217, 45, 32, 0.45);
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d92d20) 10%, transparent);
+  color: var(--dsw-alias-state-error-primary, #8f1d14);
+  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d92d20) 45%, transparent);
 }
 
 /* —— 六维明细 —— */
@@ -943,13 +943,13 @@ button.profileLegendItem:hover {
 
 .scoreLabel {
   width: 92px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
 }
 
 .scoreValue {
   width: 28px;
   text-align: right;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
 }
 
 .barTrack {
@@ -978,7 +978,7 @@ button.profileLegendItem:hover {
 }
 
 .barToken {
-  background: var(--dsw-alias-brand-primary);
+  background: var(--dsw-alias-state-business-primary);
 }
 
 /* —— 产物 —— */
@@ -1022,7 +1022,7 @@ button.profileLegendItem:hover {
   width: 40px;
   text-align: right;
   font-size: 11px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   font-variant-numeric: tabular-nums;
 }
 .profileBar {
@@ -1038,11 +1038,11 @@ button.profileLegendItem:hover {
   height: 100%;
 }
 
-.profileSeg_system { background: #4e5969; }
-.profileSeg_user { background: #0b7a75; }
-.profileSeg_tools { background: #2f88ff; }
-.profileSeg_plugin { background: #86909c; }
-.profileSeg_delegation { background: #722ed1; }
+.profileSeg_system { background: var(--dsw-alias-label-secondary, #4e5969); }
+.profileSeg_user { background: var(--dsw-alias-state-business-primary, #4176e6); }
+.profileSeg_tools { background: var(--dsw-alias-state-success-primary, #2e7d32); }
+.profileSeg_plugin { background: var(--dsw-alias-label-tertiary, #86909c); }
+.profileSeg_delegation { background: var(--dsw-alias-state-business-primary, #722ed1); }
 
 .profileLegend {
   display: grid;
@@ -1074,11 +1074,11 @@ button.profileLegendItem:hover {
   display: inline-block;
 }
 
-.profileDot_system { background: #4e5969; }
-.profileDot_user { background: #0b7a75; }
-.profileDot_tools { background: #2f88ff; }
-.profileDot_plugin { background: #86909c; }
-.profileDot_delegation { background: #722ed1; }
+.profileDot_system { background: var(--dsw-alias-label-secondary, #4e5969); }
+.profileDot_user { background: var(--dsw-alias-state-business-primary, #4176e6); }
+.profileDot_tools { background: var(--dsw-alias-state-success-primary, #2e7d32); }
+.profileDot_plugin { background: var(--dsw-alias-label-tertiary, #86909c); }
+.profileDot_delegation { background: var(--dsw-alias-state-business-primary, #722ed1); }
 
 /* —— 产物清单（树超高时限高内部滚动，与六维明细等高不爆白）—— */
 .artifactScroll {
@@ -1176,7 +1176,7 @@ button.profileLegendItem:hover {
 .skillRecentNo {
   flex: none;
   font-weight: 700;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1201,7 +1201,7 @@ button.profileLegendItem:hover {
 
 .skillRecentEmpty {
   font-size: 11.5px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   padding: 2px 6px;
 }
 
@@ -1278,7 +1278,7 @@ button.profileLegendItem:hover {
 }
 
 .roundRow:hover {
-  border-color: var(--dsw-alias-brand-primary, #3d7eff);
+  border-color: var(--dsw-alias-state-business-primary, #4176e6);
   background: var(--dsw-alias-bg-layer-2, rgba(127, 127, 127, 0.08));
 }
 
@@ -1299,16 +1299,16 @@ button.profileLegendItem:hover {
 
 .roundArrow {
   margin-left: auto;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   font-size: 14px;
   flex: none;
 }
 
 .tagRef {
   font-size: 11px;
-  background: rgba(61, 126, 255, 0.12);
-  color: #1d4f9c;
-  border: 1px solid rgba(61, 126, 255, 0.45);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary, #4176e6) 12%, transparent);
+  color: var(--dsw-alias-state-business-primary, #1d4f9c);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary, #4176e6) 45%, transparent);
   border-radius: 999px;
   padding: 0 7px;
 }
@@ -1317,7 +1317,7 @@ button.profileLegendItem:hover {
 .tagMore {
   font-size: 12px;
   font-weight: 600;
-  color: #4e5969;
+  color: var(--dsw-alias-label-secondary, #4e5969);
   background: var(--dsw-alias-bg-layer-3, rgba(127, 127, 127, 0.22));
   border-radius: 999px;
   padding: 0 7px;
@@ -1329,7 +1329,7 @@ button.profileLegendItem:hover {
 .grid2 :focus-visible,
 .card :focus-visible,
 .roundRow:focus-visible {
-  outline: 2px solid var(--dsw-alias-brand-primary, #3d7eff);
+  outline: 2px solid var(--dsw-alias-state-business-primary, #4176e6);
   outline-offset: 2px;
 }
 
@@ -1422,7 +1422,7 @@ button.profileLegendItem:hover {
 
 .suggestBasis {
   font-size: 11px;
-  color: #5f6673;
+  color: var(--dsw-alias-label-tertiary, #5f6673);
   margin-top: 4px;
   word-break: break-all;
 }
@@ -1430,9 +1430,9 @@ button.profileLegendItem:hover {
 .suggestKindPreference {
   flex: none;
   font-size: 11px;
-  color: #5b2e9e;
-  background: rgba(139, 92, 246, 0.14);
-  border: 1px solid rgba(139, 92, 246, 0.45);
+  color: var(--dsw-alias-state-business-primary, #5b2e9e);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary, #8b5cf6) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary, #8b5cf6) 45%, transparent);
   border-radius: 6px;
   padding: 1px 8px;
   margin-top: 1px;
@@ -1441,9 +1441,9 @@ button.profileLegendItem:hover {
 .suggestKindRule {
   flex: none;
   font-size: 11px;
-  color: #7a2d00;
-  background: rgba(181, 71, 8, 0.14);
-  border: 1px solid rgba(181, 71, 8, 0.45);
+  color: var(--dsw-alias-state-warn-primary, #7a2d00);
+  background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 45%, transparent);
   border-radius: 6px;
   padding: 1px 8px;
   margin-top: 1px;
@@ -1452,9 +1452,9 @@ button.profileLegendItem:hover {
 .suggestKindKnowledge {
   flex: none;
   font-size: 11px;
-  color: #1a5a2e;
-  background: rgba(46, 125, 50, 0.14);
-  border: 1px solid rgba(46, 125, 50, 0.45);
+  color: var(--dsw-alias-state-success-primary, #1a5a2e);
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #2e7d32) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-success-primary, #2e7d32) 45%, transparent);
   border-radius: 6px;
   padding: 1px 8px;
   margin-top: 1px;
