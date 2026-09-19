@@ -123,3 +123,23 @@
   z-index: 10;
   pointer-events: none;
 }
+
+.viewBadge {
+  position: relative;
+  display: inline-flex;
+}
+.viewBadgeTip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  margin-bottom: 4px;
+}

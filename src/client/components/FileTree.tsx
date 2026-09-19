@@ -27,6 +27,21 @@ export interface FileTreeProps {
   onSelectFile?: (path: string, node: FileTreeNode) => void
 }
 
+/** 查看次数徽章（自定义 tooltip，无延迟）。 */
+function ViewBadge({ n, t }: { n: number; t: Translate }): JSX.Element {
+  const [show, setShow] = useState(false)
+  return (
+    <span
+      className={css.viewBadge}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      {t('badge.views', { n })}
+      {show && <span className={css.viewBadgeTip}>{t('column.reference')}</span>}
+    </span>
+  )
+}
+
 /** 展开第 1 层目录的默认集合。 */
 function defaultExpanded(nodes: readonly FileTreeNode[]): ReadonlySet<string> {
   const set = new Set<string>()
@@ -98,7 +113,7 @@ export function FileTree({ nodes, t, agentsMeta, injected = false, onSelectFile 
               <span className={css.unusedBadge} title={t('coach.references.unusedHint') ?? '本轮读取但未用于任何产物'}>{t('coach.references.unusedTag') ?? '未用'}</span>
             ) : null}
             {node.viewCount !== undefined && node.viewCount > 0 ? (
-              <span className={css.viewBadge} title={t('column.reference')}>{t('badge.views', { n: node.viewCount })}</span>
+              <ViewBadge n={node.viewCount} t={t} />
             ) : null}
             {(node.agents ?? []).map(agentKey => (
               <AgentBadge key={agentKey} badge={agentsMeta.get(agentKey)} t={t} />
