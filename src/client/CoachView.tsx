@@ -745,6 +745,7 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                     title={t('coach.timeline.openTurn')}
                   >
                     <span className={css.roundNo}>{roundNo}</span>
+                    <span className={css.roundText}>{round.userText}</span>
                     {round.kind === 'initial' ? (
                       <span className={css.tagInitial}>{t('coach.timeline.initial')}</span>
                     ) : round.signals?.correction ? (
@@ -754,7 +755,6 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                     ) : (
                       <span className={css.tagFollow}>{t('coach.timeline.followup')}</span>
                     )}
-                    <span className={css.roundText}>{round.userText}</span>
                     {roundTagsOf(round, t, 3)}
                     <span className={css.roundArrow}>{'›'}</span>
                   </button>
@@ -1146,6 +1146,7 @@ function TimelineDrawer({
               : rounds.map((round, index) => (
               <details key={index} className={css.round}>
                 <summary className={css.roundHead}>
+                  <span className={css.roundText}>{round.userText}</span>
                   {round.kind === 'initial' ? (
                     <span className={css.tagInitial}>{t('coach.timeline.initial')}</span>
                   ) : round.signals?.correction ? (
@@ -1155,7 +1156,6 @@ function TimelineDrawer({
                   ) : (
                     <span className={css.tagFollow}>{t('coach.timeline.followup')}</span>
                   )}
-                  <span className={css.roundText}>{round.userText}</span>
                   {roundTagsOf(round, t, 3)}
                 </summary>
                 <RoundDetail round={round} t={t} onSelectFile={onSelectFile} />

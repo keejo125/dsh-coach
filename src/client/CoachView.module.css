@@ -955,7 +955,7 @@ button.profileLegendItem:hover {
   flex: none;
   font-size: 11px;
   line-height: 1.4;
-  min-width: 80px;
+  padding: 1px 8px;
   text-align: center;
   justify-content: center;
   white-space: nowrap;
