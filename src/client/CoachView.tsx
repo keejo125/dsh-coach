@@ -744,17 +744,19 @@ export function CoachView({ sessionId, t }: CoachViewProps): JSX.Element {
                     onClick={() => setDetail({ kind: 'timelineTurn', index })}
                     title={t('coach.timeline.openTurn')}
                   >
-                    <span className={css.roundNo}>{roundNo}</span>
+                    <span className={css.roundNo}>
+                      {roundNo}
+                      <span className={css.roundStatus}>
+                        {round.kind === 'initial'
+                          ? t('coach.timeline.initial')
+                          : round.signals?.correction
+                            ? t('coach.timeline.correction')
+                            : round.signals?.intervention
+                              ? t('coach.timeline.intervention')
+                              : t('coach.timeline.followup')}
+                      </span>
+                    </span>
                     <span className={css.roundText}>{round.userText}</span>
-                    {round.kind === 'initial' ? (
-                      <span className={css.tagInitial}>{t('coach.timeline.initial')}</span>
-                    ) : round.signals?.correction ? (
-                      <span className={css.tagError}>{t('coach.timeline.correction')}</span>
-                    ) : round.signals?.intervention ? (
-                      <span className={css.tagIntervention}>{t('coach.timeline.intervention')}</span>
-                    ) : (
-                      <span className={css.tagFollow}>{t('coach.timeline.followup')}</span>
-                    )}
                     {roundTagsOf(round, t, 3)}
                     <span className={css.roundArrow}>{'›'}</span>
                   </button>

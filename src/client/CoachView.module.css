@@ -1589,3 +1589,11 @@ button.profileLegendItem:hover {
   color: var(--dsw-alias-state-success-primary, #22c55e);
   border: 1px solid color-mix(in srgb, var(--dsw-alias-state-success-primary, #22c55e) 80%, transparent);
 }
+
+.roundStatus {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--dsw-alias-label-tertiary, #86909c);
+  margin-top: 2px;
+}
