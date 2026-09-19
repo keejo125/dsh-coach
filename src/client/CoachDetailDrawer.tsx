@@ -76,7 +76,7 @@ function ItemRow({
   }
   return (
     <div
-      className={`${css.item} ${toneClass(entry.tone)} ${entry.noIndex === true ? css.itemMetric : ''}`}
+      className={`${css.item} ${entry.noIndex === true ? css.itemMetric : toneClass(entry.tone)}`}
     >
       {entry.noIndex === true ? null : <span className={css.itemIndex}>{index + 1}</span>}
       <span className={css.itemText}>{entry.text}</span>
