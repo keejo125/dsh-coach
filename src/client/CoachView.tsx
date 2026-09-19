@@ -1213,6 +1213,12 @@ function countsForRound(files: readonly CoachArtifactFile[]): CoachArtifacts {
 }
 
 /** 时间线单轮展开：①对话气泡 ②参考文件树 ③产物文件树 + 过程折叠。导出供 SSR 冒烟测试。 */
+/** 判断是否 skill 调用（非内置工具名）。 */
+function isSkillAction(name: string): boolean {
+  const builtin = new Set(['Read','Write','Bash','Edit','Grep','Glob','WebFetch','WebSearch','Task','TodoWrite','NotebookEdit','ComputerUse','Mouse','Keyboard','Shell','Exec','Spawn'])
+  return !builtin.has(name) && /^[a-z]/.test(name)
+}
+
 export function RoundDetail({ round, t, onSelectFile }: {
   round: CoachTimelineRound
   t: Translate
@@ -1287,6 +1293,7 @@ export function RoundDetail({ round, t, onSelectFile }: {
             <div key={g.name} className={css.actionGroup}>
               <div className={css.actionGroupHead}>
                 <span className={css.actionGroupName}>{g.name}</span>
+                {isSkillAction(g.name) && <span className={css.tagSkill}>skill</span>}
                 <span className={css.actionGroupCount}>{g.count}</span>
                 {g.failed > 0 && <span className={css.tagError}>{t('coach.timeline.failed')} {g.failed}</span>}
                 {g.retried > 0 && <span className={css.tagWarn}>{t('coach.timeline.retried')} {g.retried}</span>}

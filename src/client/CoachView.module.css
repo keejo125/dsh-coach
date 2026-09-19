@@ -788,10 +788,10 @@ button.profileLegendItem:hover {
   padding: 8px 0;
 }
 
-.chatUser {
+chatUser {
   align-self: flex-end;
   max-width: 88%;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--dsw-alias-label-primary-inverted);
   background: var(--dsw-alias-state-business-primary);
@@ -867,11 +867,13 @@ button.profileLegendItem:hover {
 }
 
 .actionPath {
-  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 260px;
+  font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
 }
 
 .answer {
@@ -1526,8 +1528,14 @@ button.profileLegendItem:hover {
   align-items: baseline;
   gap: 6px;
   margin: 12px 0 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dsw-alias-border-l3);
 }
-.sectionHead:first-child { margin-top: 0; }
+.sectionHead:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
 .sectionTitle {
   font-size: 13px;
   font-weight: 600;
@@ -1567,4 +1575,13 @@ button.profileLegendItem:hover {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.tagSkill {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #7c3aed) 14%, transparent);
+  color: var(--dsw-alias-state-business-tertiary, #7c3aed);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-tertiary, #7c3aed) 45%, transparent);
 }
