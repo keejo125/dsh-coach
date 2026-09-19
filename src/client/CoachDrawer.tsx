@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { CoachApiError, fetchCoachFile, type CoachFileContent } from './coach-client.ts'
-import { IconCloseOutline16, IconFullscreenOutline16 } from './icons/index.tsx'
+import { IconCloseOutline16, IconFullscreenOutline16, IconFolderOpen16 } from './icons/index.tsx'
 import type { Translate } from './components/AgentBadge.tsx'
 import css from './CoachDrawer.module.css'
 
@@ -89,6 +89,18 @@ export function CoachDrawer({ sessionId, path, t, onClose }: CoachDrawerProps): 
               aria-label={t('coach.drawer.zoom')}
             >
               <IconFullscreenOutline16 size={16} />
+            </button>
+            <button
+              type="button"
+              className={css.iconButton}
+              onClick={() => {
+                const dir = path.split('/').slice(0, -1).join('/')
+                if (dir) window.open('file://' + dir, '_blank')
+              }}
+              title={t('coach.drawer.openDir')}
+              aria-label={t('coach.drawer.openDir')}
+            >
+              <IconFolderOpen16 size={16} />
             </button>
             <button type="button" className={css.iconButton} onClick={onClose} title={t('coach.drawer.close')} aria-label={t('coach.drawer.close')}>
               <IconCloseOutline16 size={16} />

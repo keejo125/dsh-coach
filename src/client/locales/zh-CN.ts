@@ -136,6 +136,7 @@ export const zh = {
   'coach.drawer.title': '文件正文',
   'coach.drawer.close': '关闭',
   'coach.drawer.zoom': '放大/还原',
+  'coach.drawer.openDir': '打开当前目录',
   'coach.drawer.loadFailed': '文件读取失败',
   'coach.drawer.noDetail': '暂无明细',
   'coach.drawer.fileNotFound': '文件不存在',

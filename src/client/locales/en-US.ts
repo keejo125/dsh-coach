@@ -135,6 +135,7 @@ export const en: Record<ContextLocaleKey, string> = {
   'coach.drawer.title': 'File content',
   'coach.drawer.close': 'Close',
   'coach.drawer.zoom': 'Zoom / restore',
+  'coach.drawer.openDir': 'Open folder',
   'coach.drawer.loadFailed': 'Failed to read file',
   'coach.drawer.noDetail': 'No details',
   'coach.drawer.fileNotFound': 'File not found',
