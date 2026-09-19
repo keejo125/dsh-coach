@@ -1121,8 +1121,8 @@ button.profileLegendItem:hover {
 .skillRow {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   font-size: 12px;
   padding: 6px 8px;
   border-radius: 6px;
@@ -1132,7 +1132,7 @@ button.profileLegendItem:hover {
   cursor: pointer;
   width: 100%;
   font: inherit;
-  text-align: right;
+  text-align: left;
 }
 
 .skillRow:hover {
@@ -1154,24 +1154,32 @@ button.profileLegendItem:hover {
   color: var(--dsw-alias-state-business-primary, #4176e6);
 }
 
+.skillCalls,
+.skillOk,
+.skillFailed {
+  flex: none;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .skillCalls {
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary, #81858c) 14%, transparent);
   color: var(--dsw-alias-label-secondary);
 }
 
-.skillCalls b {
-  color: var(--dsw-alias-label-primary);
-}
-
 .skillOk {
-  flex: none;
-  font-size: 11.5px;
-  color: var(--dsw-alias-state-success-primary, #12805c);
-  b { color: inherit; }
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary, #22c55e) 14%, transparent);
+  color: var(--dsw-alias-state-success-primary, #16a34a);
 }
 
 .skillFailed {
-  color: var(--dsw-alias-state-error-primary);
-  font-weight: 600;
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d92d20) 12%, transparent);
+  color: var(--dsw-alias-state-error-primary, #d92d20);
 }
 
 /* Skill 卡：最近调用轮次（填充内容 + 可下钻线索） */

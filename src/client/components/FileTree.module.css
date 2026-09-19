@@ -57,18 +57,18 @@
 }
 
 .viewBadge {
-  font-size: 10px;
-  padding: 0 4px;
-  border-radius: 8px;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
   background: rgba(127, 127, 127, 0.18);
   font-variant-numeric: tabular-nums;
   flex: none;
 }
 
 .opBadge {
-  font-size: 10px;
-  padding: 0 4px;
-  border-radius: 8px;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
   flex: none;
 }
 
@@ -86,9 +86,9 @@
 /* 「系统注入」徽标 */
 
 .injectBadge {
-  font-size: 10px;
-  padding: 0 4px;
-  border-radius: 8px;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
   background: rgba(150, 100, 200, 0.18);
   color: #6b3fa0;
   flex: none;
@@ -96,9 +96,9 @@
 
 /* 「未用」徽标（引用分析：读了但没用于产物） */
 .unusedBadge {
-  font-size: 10px;
-  padding: 0 4px;
-  border-radius: 8px;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 999px;
   flex: none;
   background: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #b54708) 14%, transparent);
   color: var(--dsw-alias-state-warn-primary, #7a2d00);
