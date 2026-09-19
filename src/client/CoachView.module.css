@@ -793,7 +793,7 @@ button.profileLegendItem:hover {
   max-width: 88%;
   font-size: 13px;
   line-height: 1.6;
-  color: var(--dsw-alias-label-primary-inverted);
+  color: var(--dsw-alias-label-primary, #e5e7eb);
   background: var(--dsw-alias-fill-secondary, rgba(255, 255, 255, 0.08));
   border-radius: 16px;
   padding: 10px 16px;
